@@ -6,17 +6,20 @@ import { useStore } from "@/lib/store";
 import { findWord } from "@/lib/state";
 import type { CourseWord } from "@/content/types";
 import { practiceExercises, type Exercise, type PracticeMode } from "@/lib/exercises";
+import { dayKey } from "@/lib/dates";
 import ExerciseRunner, { type RunResult } from "@/components/ExerciseRunner";
+import SubNav from "@/components/SubNav";
+import { IconAlert, IconBars, IconCards, IconHash, IconMic } from "@/components/Icons";
 
-const MODES: { id: PracticeMode; title: string; de: string; blurb: string; needs: "words" | "units" }[] = [
-  { id: "mixed", title: "Quick mix", de: "Gemischt", blurb: "A bit of everything from words you've learned.", needs: "words" },
-  { id: "type", title: "Type the German", de: "Schreiben", blurb: "See the English, type the German word. No multiple choice.", needs: "words" },
-  { id: "dictation", title: "Dictation", de: "Diktat", blurb: "Listen to a word or sentence and type exactly what you hear.", needs: "units" },
-  { id: "conj", title: "Verb endings", de: "Konjugation", blurb: "Type the right form: du ___ (sprechen).", needs: "units" },
-  { id: "sentences", title: "Sentences", de: "Sätze", blurb: "Fill-in-the-blank and sentence building from your lessons.", needs: "units" },
-  { id: "gender", title: "der, die, das", de: "Artikel", blurb: "Rapid-fire gender practice with your nouns.", needs: "words" },
-  { id: "listen", title: "Listening", de: "Hören", blurb: "Hear a word, pick what you heard.", needs: "words" },
-  { id: "weak", title: "Tricky words", de: "Schwierige Wörter", blurb: "The flashcards you've missed the most.", needs: "words" },
+const MODES: { id: PracticeMode; title: string; blurb: string; needs: "words" | "units" }[] = [
+  { id: "type", title: "Type it", blurb: "See English, type the German. Some go the other way.", needs: "words" },
+  { id: "dictation", title: "Dictation", blurb: "Hear a word or sentence, type exactly what you heard.", needs: "units" },
+  { id: "conj", title: "Verb endings", blurb: "Type the right form: du ___ (sprechen).", needs: "units" },
+  { id: "sentences", title: "Sentences", blurb: "Fill gaps and put words in order, from your lessons.", needs: "units" },
+  { id: "gender", title: "der, die, das", blurb: "Quick-fire genders for your nouns.", needs: "words" },
+  { id: "listen", title: "Listening", blurb: "Hear a word, pick what you heard.", needs: "words" },
+  { id: "mixed", title: "Quick mix", blurb: "A bit of everything.", needs: "words" },
+  { id: "weak", title: "Tricky words", blurb: "Flashcards you've missed the most.", needs: "words" },
 ];
 
 export default function PracticePage() {
@@ -30,14 +33,17 @@ export default function PracticePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [state.cards, state.custom]
   );
-  const weak = useMemo(() => {
-    const scored = deck
-      .map((w) => ({ w, c: state.cards[w.id] }))
-      .filter(({ c }) => c && (c.lapses > 0 || c.ease < 2.4))
-      .sort((a, b) => b.c.lapses - a.c.lapses || a.c.ease - b.c.ease)
-      .map(({ w }) => w);
-    return scored;
-  }, [deck, state.cards]);
+  const weak = useMemo(
+    () =>
+      deck
+        .map((w) => ({ w, c: state.cards[w.id] }))
+        .filter(({ c }) => c && (c.lapses > 0 || c.ease < 2.4))
+        .sort((a, b) => b.c.lapses - a.c.lapses || a.c.ease - b.c.ease)
+        .map(({ w }) => w),
+    [deck, state.cards]
+  );
+  const due = Object.values(state.cards).filter((c) => c.due <= dayKey()).length;
+  const mistakeCount = Object.keys(state.mistakes).length;
 
   const start = (mode: PracticeMode) => {
     const words = mode === "weak" ? (weak.length >= 4 ? weak : deck) : deck;
@@ -64,68 +70,111 @@ export default function PracticePage() {
     );
   }
 
-  if (result) {
-    const m = MODES.find((x) => x.id === result.mode)!;
-    return (
-      <div className="page">
-        <section className="panel stack done-card">
-          <p className="big">
-            {result.correct}/{result.total}
-          </p>
-          <h2>{m.title}: done</h2>
-          <p className="muted">You earned {result.xp} XP.</p>
-          <div className="stack" style={{ width: "100%" }}>
-            <button className="btn block" onClick={() => start(result.mode)}>
-              Another round
-            </button>
-            <button className="btn ghost block" onClick={() => setResult(null)}>
-              Pick something else
-            </button>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
   const hasWords = deck.length >= 4;
   const hasUnits = doneUnits.length > 0;
 
   return (
     <div className="page">
+      <SubNav group="practice" />
       <div className="page-head">
         <h1>Practice</h1>
-        <p className="sub">Short rounds using what you've already learned. Most of them have you typing, not just tapping.</p>
+        <p className="sub">Short rounds using what you've already learned.</p>
       </div>
 
-      {!hasWords && !hasUnits && (
-        <div className="notice">
-          <p>
-            Practice draws on lessons you've finished. <Link href="/learn">Do your first lesson</Link> and everything here opens up.
-          </p>
-        </div>
+      {result && (
+        <section className="panel stack">
+          <div className="row between">
+            <h2>{MODES.find((m) => m.id === result.mode)?.title}: done</h2>
+            <span className="pill red">
+              {result.correct}/{result.total}
+            </span>
+          </div>
+          <p className="muted small">+{result.xp} XP. Anything you missed went into your mistake notebook.</p>
+          <button className="btn ghost block" onClick={() => start(result.mode)}>
+            Another round
+          </button>
+        </section>
       )}
 
-      <div className="mode-grid">
-        {MODES.map((m) => {
-          const available = m.needs === "words" ? hasWords : hasUnits;
-          const extra = m.id === "weak" && available ? (weak.length ? `${weak.length} words` : "None yet, so this uses your whole deck") : "";
-          return (
-            <button key={m.id} className="mode-card" disabled={!available} onClick={() => start(m.id)} style={available ? undefined : { opacity: 0.5 }}>
-              <h3>{m.title}</h3>
-              <span className="de">{m.de}</span>
-              <span className="small muted">{m.blurb}</span>
-              {extra && <span className="tiny faint">{extra}</span>}
-            </button>
-          );
-        })}
+      {!hasUnits && (
+        <p className="notice">
+          Practice uses lessons you've finished. <Link href="/learn">Start the first lesson</Link> and everything here opens up.
+        </p>
+      )}
+
+      <div className="action-list">
+        <Link href="/review" className="action">
+          <span className="ico">
+            <IconCards size={20} />
+          </span>
+          <span className="grow">
+            <b>Flashcards</b>
+            <span className="small muted" style={{ display: "block" }}>
+              {due ? `${due} ready to review` : "All caught up"}
+            </span>
+          </span>
+        </Link>
+        <Link href="/mistakes" className="action">
+          <span className="ico">
+            <IconAlert size={20} />
+          </span>
+          <span className="grow">
+            <b>Mistake notebook</b>
+            <span className="small muted" style={{ display: "block" }}>
+              {mistakeCount ? `${mistakeCount} to fix` : "Nothing to fix right now"}
+            </span>
+          </span>
+        </Link>
+        <Link href="/speak" className="action">
+          <span className="ico">
+            <IconMic size={20} />
+          </span>
+          <span className="grow">
+            <b>Speaking</b>
+            <span className="small muted" style={{ display: "block" }}>
+              Say it out loud and get checked
+            </span>
+          </span>
+        </Link>
+        <Link href="/numbers" className="action">
+          <span className="ico">
+            <IconHash size={20} />
+          </span>
+          <span className="grow">
+            <b>Numbers & time</b>
+            <span className="small muted" style={{ display: "block" }}>
+              Prices, clock times, phone numbers
+            </span>
+          </span>
+        </Link>
+        <Link href="/weak" className="action">
+          <span className="ico">
+            <IconBars size={20} />
+          </span>
+          <span className="grow">
+            <b>Weak spots</b>
+            <span className="small muted" style={{ display: "block" }}>
+              See what you miss most and work on it
+            </span>
+          </span>
+        </Link>
       </div>
 
-      <section className="panel flat stack">
-        <h2>Want to write freely?</h2>
-        <p className="muted">Translate sentences, answer questions, keep a short journal, or chat in German, and get your mistakes explained.</p>
-        <Link href="/write" className="btn ghost">
-          Open Write
-        </Link>
+      <section className="stack">
+        <h2 className="section-title" style={{ margin: 0 }}>
+          Drills
+        </h2>
+        <div className="mode-grid">
+          {MODES.map((m) => {
+            const available = m.needs === "words" ? hasWords : hasUnits;
+            return (
+              <button key={m.id} className="mode-card" disabled={!available} onClick={() => start(m.id)} style={available ? undefined : { opacity: 0.45 }}>
+                <b>{m.title}</b>
+                <span className="small muted">{m.blurb}</span>
+              </button>
+            );
+          })}
+        </div>
       </section>
     </div>
   );

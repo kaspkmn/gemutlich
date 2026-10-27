@@ -42,19 +42,20 @@ export interface TestSpec {
 
 // ── the fixed tests ────────────────────────────────────────────────────────
 
+/** A review test after every 4 lessons. ("boss" ids are kept so saved results still match.) */
 export interface Boss {
   n: number;
   title: string;
-  titleDe: string;
   units: string[];
 }
 
-export const BOSSES: Boss[] = [
-  { n: 1, title: "First words", titleDe: "Die ersten Wörter", units: UNITS.slice(0, 4).map((u) => u.id) },
-  { n: 2, title: "Me and mine", titleDe: "Ich und meine Welt", units: UNITS.slice(4, 8).map((u) => u.id) },
-  { n: 3, title: "Day to day", titleDe: "Der Alltag", units: UNITS.slice(8, 12).map((u) => u.id) },
-  { n: 4, title: "Grammar gauntlet", titleDe: "Die Grammatik", units: UNITS.slice(12, 16).map((u) => u.id) },
-];
+const BLOCK_NAMES = ["First words", "Everyday basics", "Daily life", "Grammar basics", "Routines and the past", "Describing and connecting"];
+
+export const BOSSES: Boss[] = BLOCK_NAMES.map((title, i) => ({
+  n: i + 1,
+  title,
+  units: UNITS.slice(i * 4, i * 4 + 4).map((u) => u.id),
+})).filter((b) => b.units.length > 0);
 
 export const FINAL_ID = "final";
 
@@ -79,8 +80,8 @@ export function bossSpec(n: number): TestSpec | null {
   const last = getUnit(b.units[b.units.length - 1])!.n;
   return {
     id: `boss:${b.n}`,
-    title: `Boss ${b.n}: ${b.title}`,
-    subtitle: `Lessons ${first} to ${last}`,
+    title: `Review test ${b.n}`,
+    subtitle: `${b.title}: lessons ${first} to ${last}`,
     units: b.units,
     count: 25,
     types: ALL_TYPES,

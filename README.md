@@ -1,21 +1,31 @@
-# Deutsch Quest
+# Deutsch
 
-Your own German course, from total beginner up. Next.js on Vercel, with Supabase syncing your progress between your phone and computer.
+Your own German course, from total beginner toward A2. Next.js on Vercel, with Supabase syncing your progress between your phone and computer.
 
 ## What it costs
 
-Everything is free except the Write tab. GitHub, Vercel and Supabase all work on their free plans. The Write tab uses Claude to correct your writing, which needs an Anthropic API key with paid credit. That's optional, and the rest of the site works fully without it.
+Nothing. GitHub, Vercel and Supabase all work on their free plans, and every feature works without paying for anything.
+
+The Write tab gets its feedback by opening claude.ai with your writing and tutor instructions filled in, which is covered by a Claude subscription. If you ever add an Anthropic API key (billed separately), feedback shows right inside the site instead. That's optional.
 
 ## What's inside
 
-- **Course**: 16 lessons (about 280 words) from pronunciation to finding your way around town. Each one has words with audio, short grammar notes, and a round of about 20 exercises.
-- **Flashcards**: spaced repetition. Finishing a lesson adds its words to your deck, and cards come back right before you'd forget them.
-- **Practice**: typing the German, dictation, verb endings, sentence building, der/die/das drills, listening, and a "tricky words" round.
-- **Tests**: graded tests with no hints. Multiple choice, written answers, listening and sentence building, with a rank (S, A, B, C, D) and a full answer review at the end. There's a test for every lesson, a boss test after every 4 lessons, a final exam, and a custom test builder. 70% to pass.
-- **Write** (optional, needs an API key): translate sentences, answer questions, keep a journal, or chat, with every mistake explained.
-- **Progress**: levels and XP, a daily quest, streaks, a study calendar, and test results.
+- **Today's session**: one button that builds a 10 to 15 minute session from due flashcards, your mistake notebook, your weakest area, and a little speaking.
+- **Lessons**: 24 lessons (about 430 words), from pronunciation to the past tense, the dative, weil/dass and comparing things. Each has words with audio, short grammar notes and about 20 exercises.
+- **Stories**: 10 short stories at your level. Tap any word for its meaning and add it to your flashcards. A new one opens as you finish lessons.
+- **Listening**: 8 short conversations read aloud by two voices, with a slow mode, a transcript and questions.
+- **Grammar**: every table from the lessons in one searchable page.
+- **Flashcards**: spaced repetition. Lesson words go in automatically, plus anything you add yourself.
+- **Mistake notebook**: everything you get wrong anywhere is saved. Get it right 3 times in a row and it's cleared.
+- **Weak spots**: your recent accuracy in 9 areas (genders, verb forms, cases, listening...) with practice for each.
+- **Speaking**: say words and sentences out loud and the site checks what it heard, using the speech recognition built into Chrome, Edge and Safari. There's also a shadowing mode.
+- **Numbers & time**: hear or read prices, clock times (including halb vier) and phone numbers, and type the digits.
+- **Practice drills**: typing, dictation, verb endings, sentences, der/die/das, listening.
+- **Tests**: a test for every lesson, a review test after every 4 lessons, a final exam, and a custom test builder. No hints until the end, then every answer is shown.
+- **Write**: translate sentences, answer questions, journal, or role-play a conversation.
+- **Words & phrases**: search every word, and add your own phrases to your flashcards.
 
-Audio uses your browser's built-in German voice, so there's nothing to pay for. On iPhone you can download a nicer German voice in Settings > Accessibility > Spoken Content > Voices > German.
+Audio uses your browser's built-in German voice. On iPhone you can download a nicer one in Settings > Accessibility > Spoken Content > Voices > German. Speech checking on iPhone works in Safari itself (not from the home screen icon).
 
 ## Setup
 
@@ -27,7 +37,7 @@ Audio uses your browser's built-in German voice, so there's nothing to pay for. 
 
 ### 2. Anthropic API key (optional, costs money)
 
-Only the Write tab needs this. Skip it and everything else works.
+Skip this. Without it, the Write tab sends you to claude.ai for feedback for free. A key only moves that feedback inside the site.
 
 1. Go to console.anthropic.com, add credit, and create an API key. This is billed separately from a Claude.ai subscription.
 2. The default model is Claude Haiku 5.5, which is cheap per check.
@@ -62,7 +72,8 @@ Without Supabase settings, local progress is saved to `.data/progress.json` so y
 
 ## Where things live
 
-- `content/units.ts`: every lesson, word, grammar note and drill. Add words or fix anything here.
+- `content/units.ts` and `content/units2.ts`: every lesson, word, grammar note and drill.
+- `content/stories.ts` and `content/dialogues.ts`: the reading stories and listening conversations.
 - `content/verbs.ts`: verb conjugations used by the verb-endings practice.
 - `content/course.ts`: chat scenarios for the Write section.
 - `lib/ai.ts`: the instructions Claude follows when grading and chatting.

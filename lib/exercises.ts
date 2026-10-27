@@ -10,10 +10,10 @@ export type Exercise =
   | { kind: "typeEn"; id: string; word: CourseWord }
   | { kind: "gender"; id: string; word: CourseWord }
   | { kind: "match"; id: string; words: CourseWord[] }
-  | { kind: "fill"; id: string; de: string; en: string; answer: string; options: string[] }
-  | { kind: "fillType"; id: string; de: string; en: string; answer: string }
-  | { kind: "build"; id: string; de: string; en: string; tiles: string[] }
-  | { kind: "choice"; id: string; q: string; answer: string; options: string[]; explain?: string }
+  | { kind: "fill"; id: string; de: string; en: string; answer: string; options: string[]; unitId?: string }
+  | { kind: "fillType"; id: string; de: string; en: string; answer: string; unitId?: string }
+  | { kind: "build"; id: string; de: string; en: string; tiles: string[]; unitId?: string }
+  | { kind: "choice"; id: string; q: string; answer: string; options: string[]; explain?: string; unitId?: string }
   | { kind: "dictation"; id: string; de: string; en: string }
   | { kind: "conj"; id: string; verb: Verb; person: number; pronoun: string };
 
@@ -93,11 +93,11 @@ export function drillExercises(unit: Unit, typedFill = false): Exercise[] {
   return unit.drills.map((d) => {
     if (d.t === "fill") {
       return typedFill
-        ? { kind: "fillType", id: uid("ft"), de: d.de, en: d.en, answer: d.answer }
-        : { kind: "fill", id: uid("fl"), de: d.de, en: d.en, answer: d.answer, options: shuffle(d.options) };
+        ? { kind: "fillType", id: uid("ft"), de: d.de, en: d.en, answer: d.answer, unitId: unit.id }
+        : { kind: "fill", id: uid("fl"), de: d.de, en: d.en, answer: d.answer, options: shuffle(d.options), unitId: unit.id };
     }
-    if (d.t === "build") return buildExercise(d.de, d.en, sentences.filter((s) => s !== d.de));
-    return { kind: "choice", id: uid("ch"), q: d.q, answer: d.answer, options: shuffle(d.options), explain: d.explain };
+    if (d.t === "build") return { ...buildExercise(d.de, d.en, sentences.filter((s) => s !== d.de)), unitId: unit.id } as Exercise;
+    return { kind: "choice", id: uid("ch"), q: d.q, answer: d.answer, options: shuffle(d.options), explain: d.explain, unitId: unit.id };
   });
 }
 
@@ -180,7 +180,35 @@ export function exerciseWord(ex: Exercise): CourseWord | undefined {
   return undefined;
 }
 
-/** A fresh copy of an exercise with a new id, for retrying. */
+/** A fresh copy of an exercise with a new id and reshuffled choices, for retrying. */
 export function cloneExercise(ex: Exercise): Exercise {
-  return { ...ex, id: uid("re") } as Exercise;
+  const copy = { ...ex, id: uid("re") } as Exercise;
+  if ("options" in copy) (copy as { options: string[] }).options = shuffle(copy.options);
+  if (copy.kind === "build") copy.tiles = shuffle(copy.tiles);
+  return copy;
+}
+
+/** The right answer for an exercise, as text. */
+export function exerciseAnswer(ex: Exercise): string {
+  switch (ex.kind) {
+    case "mc":
+    case "choice":
+      return ex.answer;
+    case "listen":
+    case "type":
+    case "gender":
+      return ex.word.de;
+    case "typeEn":
+      return ex.word.en;
+    case "fill":
+    case "fillType":
+      return ex.de.replace("___", ex.answer);
+    case "build":
+    case "dictation":
+      return ex.de;
+    case "conj":
+      return `${ex.pronoun.replace(" (they)", "")} ${ex.verb.forms[ex.person]}`;
+    case "match":
+      return ex.words.map((w) => `${w.de} = ${w.en}`).join(", ");
+  }
 }

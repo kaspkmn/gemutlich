@@ -8,7 +8,7 @@ import { hydrate } from "@/lib/state";
 import { dayKey } from "@/lib/dates";
 
 const GOALS = [
-  { v: 20, l: "Casual", d: "20 XP, about 5 minutes" },
+  { v: 20, l: "Light", d: "20 XP, about 5 minutes" },
   { v: 50, l: "Regular", d: "50 XP, about 10 minutes" },
   { v: 100, l: "Serious", d: "100 XP, about 20 minutes" },
   { v: 150, l: "Intense", d: "150 XP, 30 minutes or more" },
@@ -33,7 +33,7 @@ export default function SettingsPage() {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `deutsch-quest-backup-${dayKey()}.json`;
+    a.download = `deutsch-backup-${dayKey()}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -45,7 +45,7 @@ export default function SettingsPage() {
       replaceState(hydrate(parsed));
       setMsg("Backup restored.");
     } catch {
-      setMsg("That file isn't a Deutsch Quest backup.");
+      setMsg("That file isn't a backup from this site.");
     }
   };
 
@@ -56,8 +56,8 @@ export default function SettingsPage() {
       </div>
 
       <section className="panel stack">
-        <h2>Daily quest</h2>
-        <div className="stack tight" role="radiogroup" aria-label="Daily quest">
+        <h2>Daily goal</h2>
+        <div className="stack tight" role="radiogroup" aria-label="Daily goal">
           {GOALS.map((g) => (
             <label key={g.v} className="toggle" style={{ cursor: "pointer" }}>
               <span>
@@ -147,7 +147,7 @@ export default function SettingsPage() {
       <section className="panel stack">
         <h2>Profile</h2>
         <div className="field">
-          <label htmlFor="name">Player name</label>
+          <label htmlFor="name">Your name (for the greeting)</label>
           <input id="name" className="text-input" value={s.name} maxLength={30} onChange={(e) => updateSettings({ name: e.target.value })} />
         </div>
       </section>

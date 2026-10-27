@@ -62,7 +62,7 @@ export default function ExerciseRunner({
       const xp = a.correct ? (isRetry ? 2 : 5) : 0;
       if (a.correct && !isRetry) tally.current.correct += 1;
       tally.current.xp += xp;
-      recordExercise(a.correct, xp);
+      recordExercise(a.correct, xp, ex);
       if (!a.correct && !retried.current.has(ex.id) && !isRetry) {
         retried.current.add(ex.id);
         setQueue((q) => [...q, { ...ex, id: `${ex.id}~r` } as Exercise]);

@@ -1,7 +1,8 @@
-import { UNITS } from "./units";
+import { UNITS as UNITS_1 } from "./units";
+import { UNITS_2 } from "./units2";
 import type { CourseWord, Unit } from "./types";
 
-export { UNITS };
+export const UNITS: Unit[] = [...UNITS_1, ...UNITS_2];
 
 export const ALL_WORDS: CourseWord[] = UNITS.flatMap((u) =>
   u.words.map((w) => ({ ...w, id: w.de, unitId: u.id }))

@@ -145,3 +145,81 @@ export const IconArrowRight = ({ size, className }: P) => (
     <path d="M9 5l7 7-7 7" />
   </svg>
 );
+
+export const IconMic = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" />
+  </svg>
+);
+
+export const IconRead = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M3 5.5c3-1.3 6-1.3 9 .5v14c-3-1.8-6-1.8-9-.5v-14Z" />
+    <path d="M21 5.5c-3-1.3-6-1.3-9 .5v14c3-1.8 6-1.8 9-.5v-14Z" />
+  </svg>
+);
+
+export const IconHeadphones = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
+    <rect x="3.5" y="14" width="4.5" height="6.5" rx="1.5" />
+    <rect x="16" y="14" width="4.5" height="6.5" rx="1.5" />
+  </svg>
+);
+
+export const IconHash = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M9.5 3.5 7.5 20.5M16.5 3.5l-2 17M4.5 9h16M3.5 15h16" />
+  </svg>
+);
+
+export const IconAlert = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.5v5.5M12 16.2v.3" />
+  </svg>
+);
+
+export const IconBars = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M4 6h10M4 12h16M4 18h7" />
+  </svg>
+);
+
+export const IconPlay = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M8 5.5v13l10-6.5-10-6.5Z" fill="currentColor" />
+  </svg>
+);
+
+export const IconStop = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor" />
+  </svg>
+);
+
+export const IconSearch = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="m16 16 4.5 4.5" />
+  </svg>
+);
+
+export const IconTrash = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13" />
+  </svg>
+);
+
+export const IconPlus = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+export const IconBolt = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M13 3 5 13.5h6L10.5 21 19 10h-6l0-7Z" />
+  </svg>
+);

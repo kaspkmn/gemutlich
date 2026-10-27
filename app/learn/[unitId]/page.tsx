@@ -110,8 +110,8 @@ export default function UnitPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <Link href="/learn" className="small muted" style={{ textDecoration: "none" }}>
-          Lesson {unit.n} of {UNITS.length}
+        <Link href="/learn" className="back-link">
+          <IconArrowLeft size={15} /> Lesson {unit.n} of {UNITS.length}
         </Link>
         <h1>{unit.title}</h1>
         <p className="sub">{unit.titleDe}</p>
@@ -154,7 +154,7 @@ export default function UnitPage() {
               Finished {progress.times} {progress.times === 1 ? "time" : "times"}, best score {Math.round(progress.best * 100)}%.
             </p>
           )}
-          <button className="btn glow block" onClick={() => setRun(lessonExercises(unit))}>
+          <button className="btn block" onClick={() => setRun(lessonExercises(unit))}>
             Start practice
           </button>
           <Link className="btn ghost block" href={`/test/run?id=unit:${unit.id}`}>

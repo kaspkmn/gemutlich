@@ -12,7 +12,6 @@ import { PASS_MARK } from "@/lib/level";
 import TestRunner, { type TestAnswer } from "@/components/TestRunner";
 import TestResults from "@/components/TestResults";
 import ExerciseRunner from "@/components/ExerciseRunner";
-import RankBadge from "@/components/RankBadge";
 import { IconArrowLeft } from "@/components/Icons";
 
 type Phase =
@@ -24,7 +23,7 @@ type Phase =
 function RunTest() {
   const params = useSearchParams();
   const router = useRouter();
-  const { state, ready, logTest } = useStore();
+  const { state, ready, logTest, recordAnswers } = useStore();
   const [spec, setSpec] = useState<TestSpec | null | undefined>(undefined);
   const [phase, setPhase] = useState<Phase>({ t: "intro" });
   const [noSound, setNoSound] = useState(false);
@@ -62,9 +61,10 @@ function RunTest() {
       const prev = bestTest(state, spec.id);
       const newBest = spec.id !== "custom" && prev !== undefined && total > 0 && correct / total > prev;
       logTest({ id: spec.id, title: spec.subtitle ? `${spec.title}: ${spec.subtitle}` : spec.title, correct, total, seconds }, xp);
+      recordAnswers(answers.map((a) => ({ ex: a.ex, correct: a.correct })));
       setPhase({ t: "results", answers, seconds, xp, newBest });
     },
-    [spec, state, logTest]
+    [spec, state, logTest, recordAnswers]
   );
 
   if (spec === undefined || !ready) return <div className="page" />;
@@ -134,14 +134,14 @@ function RunTest() {
   return (
     <div className="page">
       <div className="page-head">
-        <button className="link-btn row" style={{ gap: 4, textDecoration: "none", alignSelf: "flex-start" }} onClick={() => router.push("/test")}>
-          <IconArrowLeft size={16} /> All tests
+        <button className="back-link" onClick={() => router.push("/test")}>
+          <IconArrowLeft size={15} /> All tests
         </button>
         <h1>{spec.title}</h1>
         {spec.subtitle && <p className="sub">{spec.subtitle}</p>}
       </div>
 
-      <section className="panel hud stack">
+      <section className="panel stack">
         <div className="intro-grid">
           <div>
             <b>{spec.count}</b>
@@ -152,8 +152,8 @@ function RunTest() {
             <span>to pass</span>
           </div>
           <div>
-            {best !== undefined ? <RankBadge score={best} /> : <b>None</b>}
-            <span>{best !== undefined ? `best: ${Math.round(best * 100)}%` : "best rank"}</span>
+            <b>{best !== undefined ? `${Math.round(best * 100)}%` : "None"}</b>
+            <span>best score</span>
           </div>
         </div>
         <p className="muted small">Question types: {typeLabels.join(", ")}.</p>
@@ -164,7 +164,7 @@ function RunTest() {
           {spec.types.includes("listening") && <li>Turn your sound on for the listening questions.</li>}
           {noSound && <li>Listening questions are off because this browser can't play German audio.</li>}
         </ul>
-        <button className="btn block glow" onClick={start}>
+        <button className="btn block" onClick={start}>
           {attempts ? "Start a new attempt" : "Start test"}
         </button>
       </section>

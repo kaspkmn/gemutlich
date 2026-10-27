@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { useDoneUnits } from "@/lib/useDoneUnits";
 import { askAi, GradeResult, useAiEnabled, VERDICT_XP } from "@/lib/ai-client";
+import { feedbackPrompt, openInClaude } from "@/lib/claude-handoff";
 import WritingBox from "@/components/WritingBox";
 import Correction from "@/components/Correction";
 import AiNotice from "@/components/AiNotice";
@@ -28,8 +29,19 @@ export default function JournalPage() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<GradeResult | null>(null);
   const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
 
   const check = async () => {
+    if (!enabled) {
+      // free path: open claude.ai with the entry and tutor instructions
+      openInClaude(feedbackPrompt({ mode: "journal", text, prompt: `${topic.de} (${topic.en})`, doneUnits: done }));
+      logWriting(
+        { mode: "journal", prompt: topic.de, text, corrected: text, verdict: "sent" },
+        5 + Math.min(10, Math.floor(text.split(/\s+/).length / 8))
+      );
+      setSent(true);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -55,8 +67,8 @@ export default function JournalPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <Link href="/write" className="small muted row" style={{ textDecoration: "none", gap: 4 }}>
-          <IconArrowLeft size={16} /> Write
+        <Link href="/write" className="back-link">
+          <IconArrowLeft size={15} /> Write
         </Link>
         <h1>Journal</h1>
         <p className="sub">Two or three short sentences is plenty. Simple and correct beats long and tangled.</p>
@@ -89,12 +101,18 @@ export default function JournalPage() {
             onSubmit={check}
             busy={busy}
             rows={6}
-            disabled={enabled === false}
+            disabled={enabled === null}
+            submitLabel={enabled ? "Check my German" : "Get feedback in Claude"}
             placeholder={topic.starter || "Schreib hier... (Write here)"}
           />
         ) : (
           <p lang="de" style={{ whiteSpace: "pre-wrap" }}>
             {text}
+          </p>
+        )}
+        {sent && !result && (
+          <p className="small muted">
+            Opened claude.ai in a new tab with your entry filled in. If the message box is empty, it's also copied, so just paste.
           </p>
         )}
         {error && (
@@ -103,6 +121,18 @@ export default function JournalPage() {
           </p>
         )}
       </section>
+
+      {sent && !result && (
+        <button
+          className="btn ghost block"
+          onClick={() => {
+            setText("");
+            setSent(false);
+          }}
+        >
+          New entry
+        </button>
+      )}
 
       {result && (
         <>
@@ -118,7 +148,7 @@ export default function JournalPage() {
               Keep writing from the corrected version
             </button>
             <button
-              className="btn glow grow"
+              className="btn grow"
               onClick={() => {
                 setText("");
                 setResult(null);

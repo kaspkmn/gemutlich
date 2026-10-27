@@ -3,14 +3,13 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
-import { bestTest } from "@/lib/state";
 import { ALL_WORDS, UNITS } from "@/content/course";
+import { STORIES } from "@/content/stories";
 import { currentStreak, dayKey, hashString } from "@/lib/dates";
-import { levelInfo, PASS_MARK } from "@/lib/level";
-import { BOSSES } from "@/lib/tests";
+import { planSession } from "@/lib/session";
 import SpeakButton from "@/components/SpeakButton";
 import GenderTag, { GermanWord } from "@/components/GenderTag";
-import { IconBook, IconCards, IconCheck, IconExam, IconFlame, IconPen, IconSkull, IconTarget } from "@/components/Icons";
+import { IconAlert, IconBook, IconExam, IconFlame, IconHeadphones, IconMic, IconRead } from "@/components/Icons";
 
 function greeting(h: number) {
   if (h < 11) return { de: "Guten Morgen", en: "Good morning" };
@@ -27,15 +26,17 @@ export default function Home() {
   const today = dayKey();
   const xpToday = ready ? (state.days[today] ?? 0) : 0;
   const goal = state.settings.dailyGoal;
-  const questDone = xpToday >= goal;
+  const goalDone = xpToday >= goal;
   const streak = currentStreak(state.days);
-  const lv = levelInfo(state.xp);
-  const due = useMemo(() => Object.values(state.cards).filter((c) => c.due <= today).length, [state.cards, today]);
+  const plan = useMemo(
+    () => (ready ? planSession(state) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ready, state.cards, state.mistakes, state.units, state.skills]
+  );
   const nextUnit = UNITS.find((u) => !state.units[u.id]?.completed);
-  const doneIds = UNITS.filter((u) => state.units[u.id]?.completed).map((u) => u.id);
-  const passed = new Set(state.tests.filter((t) => t.total && t.correct / t.total >= PASS_MARK).map((t) => t.id)).size;
-  // a boss whose lessons are all done but hasn't been beaten yet
-  const bossReady = BOSSES.find((b) => b.units.every((u) => doneIds.includes(u)) && (bestTest(state, `boss:${b.n}`) ?? 0) < PASS_MARK);
+  const doneCount = UNITS.filter((u) => state.units[u.id]?.completed).length;
+  const unreadStory = STORIES.find((s) => state.units[s.after]?.completed && !state.read[`story:${s.id}`]);
+  const mistakes = Object.keys(state.mistakes).length;
   const wordOfDay = ALL_WORDS[hashString(today) % ALL_WORDS.length];
   const g = hour === null ? null : greeting(hour);
   const name = state.settings.name;
@@ -43,135 +44,87 @@ export default function Home() {
   return (
     <div className="page">
       <section className="greeting">
-        <h1>{g ? `${g.de}${name ? `, ${name}` : ""}!` : " "}</h1>
+        <h1>{g ? `${g.de}${name ? `, ${name}` : ""}` : " "}</h1>
         <p className="en">{g ? g.en : " "}</p>
       </section>
 
-      <section className="panel hud player" aria-label="Your stats">
-        <div className="player-top">
-          <div className="lv-hex" aria-label={`Level ${lv.level}`}>
-            <span>
-              <small>LV</small>
-              <b>{lv.level}</b>
-            </span>
+      {plan.length > 0 ? (
+        <section className="session-card">
+          <div>
+            <h2>Today's session</h2>
+            <p className="small muted">About 10 to 15 minutes, built from what's due and what you've been missing.</p>
           </div>
-          <div className="grow">
-            <p className="player-name">{name || "Player"}</p>
-            <div className="segbar" style={{ marginTop: 6 }} aria-label={`${lv.into} of ${lv.need} XP to level ${lv.level + 1}`}>
-              <div style={{ width: `${Math.round(lv.pct * 100)}%` }} />
-            </div>
-            <div className="xp-line">
-              <span>
-                {lv.into} / {lv.need} XP
-              </span>
-              <span>to level {lv.level + 1}</span>
-            </div>
+          <ul>
+            {plan.map((s) => (
+              <li key={s.kind}>{s.label}</li>
+            ))}
+          </ul>
+          <Link href="/session" className="btn block">
+            Start session
+          </Link>
+        </section>
+      ) : (
+        <section className="session-card">
+          <div>
+            <h2>{doneCount === 0 ? "Start here" : "Next up"}</h2>
+            <p className="small muted">
+              {doneCount === 0
+                ? "Your first lesson covers how German sounds. About 10 minutes."
+                : "Nothing to review right now. Keep going with the course."}
+            </p>
           </div>
-        </div>
-        <div className="stat-line">
-          <div className="stat">
-            <b className="row" style={{ gap: 4 }}>
-              <IconFlame size={20} className="flame" />
-              {streak}
-            </b>
-            <span>day streak</span>
-          </div>
-          <div className="stat">
-            <b>{Object.keys(state.cards).length}</b>
-            <span>words</span>
-          </div>
-          <div className="stat">
-            <b>{passed}</b>
-            <span>tests passed</span>
-          </div>
-        </div>
-      </section>
+          <Link href={nextUnit ? `/learn/${nextUnit.id}` : "/read"} className="btn block">
+            {nextUnit ? `Lesson ${nextUnit.n}: ${nextUnit.title}` : "Read a story"}
+          </Link>
+        </section>
+      )}
 
-      <section className={`panel quest${questDone ? " complete" : ""}`} aria-label="Daily quest">
-        <div className="quest-head">
-          <b>{questDone ? "Daily quest complete" : `Daily quest: earn ${goal} XP`}</b>
+      <section className="panel goal" aria-label="Daily goal">
+        <div className="goal-head">
+          <b>{goalDone ? "Daily goal reached" : "Daily goal"}</b>
           <span>
-            {questDone && <IconCheck size={16} />} {Math.min(xpToday, goal)} / {goal}
+            {Math.min(xpToday, goal)} / {goal} XP
           </span>
         </div>
-        <div className={`segbar${questDone ? " done" : ""}`}>
+        <div className={`segbar${goalDone ? " done" : ""}`}>
           <div style={{ width: `${Math.min(100, (xpToday / goal) * 100)}%` }} />
         </div>
-        {questDone && xpToday > goal && <p className="tiny faint">+{xpToday - goal} bonus XP today</p>}
+        <p className="tiny faint row" style={{ gap: 4 }}>
+          <IconFlame size={14} className="flame" />
+          {streak === 0 ? "Start a streak today" : `${streak} day streak`}
+        </p>
       </section>
 
-      <section className="action-list" aria-label="What to do next">
-        {nextUnit ? (
-          <Link href={`/learn/${nextUnit.id}`} className="action primary">
-            <span className="ico">
-              <IconBook />
-            </span>
-            <span className="grow">
-              <b>{doneIds.length === 0 ? "Start your first lesson" : "Next lesson"}</b>
-              <span className="muted small" style={{ display: "block" }}>
-                {nextUnit.n}. {nextUnit.title}
-              </span>
-            </span>
-          </Link>
-        ) : (
-          <Link href="/test/run?id=final" className="action primary">
-            <span className="ico">
-              <IconExam />
-            </span>
-            <span className="grow">
-              <b>Course complete</b>
-              <span className="muted small" style={{ display: "block" }}>
-                Take the final exam
-              </span>
-            </span>
-          </Link>
-        )}
-        {bossReady && (
-          <Link href={`/test/run?id=boss:${bossReady.n}`} className="action">
-            <span className="ico">
-              <IconSkull />
-            </span>
-            <span className="grow">
-              <b>Boss {bossReady.n} is ready</b>
-              <span className="muted small" style={{ display: "block" }}>
-                {bossReady.title}: test yourself on 4 lessons
-              </span>
-            </span>
-          </Link>
-        )}
-        <Link href="/review" className="action">
-          <span className="ico">
-            <IconCards />
-          </span>
-          <span className="grow">
-            <b>Flashcards</b>
-            <span className="muted small" style={{ display: "block" }}>
-              {due ? "Ready for review" : Object.keys(state.cards).length ? "All caught up" : "Finish a lesson to fill your deck"}
-            </span>
-          </span>
-          {due > 0 && <span className="count">{due}</span>}
+      <section className="quick-grid" aria-label="Shortcuts">
+        <Link href={nextUnit ? `/learn/${nextUnit.id}` : "/learn"} className="quick">
+          <IconBook size={20} />
+          <b>{nextUnit ? "Next lesson" : "Lessons"}</b>
+          <span>{nextUnit ? `${nextUnit.n}. ${nextUnit.title}` : "All finished"}</span>
         </Link>
-        <Link href="/practice" className="action">
-          <span className="ico">
-            <IconTarget />
-          </span>
-          <span className="grow">
-            <b>Practice</b>
-            <span className="muted small" style={{ display: "block" }}>
-              Typing, listening, genders, verb endings
-            </span>
-          </span>
+        <Link href={unreadStory ? `/read/${unreadStory.id}` : "/read"} className="quick">
+          <IconRead size={20} />
+          <b>Stories</b>
+          <span>{unreadStory ? unreadStory.titleEn : "Read with tap-to-translate"}</span>
         </Link>
-        <Link href="/write" className="action">
-          <span className="ico">
-            <IconPen />
-          </span>
-          <span className="grow">
-            <b>Write in German</b>
-            <span className="muted small" style={{ display: "block" }}>
-              Translate, answer questions, journal, chat
-            </span>
-          </span>
+        <Link href="/speak" className="quick">
+          <IconMic size={20} />
+          <b>Speaking</b>
+          <span>Say it out loud</span>
+        </Link>
+        <Link href="/listen" className="quick">
+          <IconHeadphones size={20} />
+          <b>Listening</b>
+          <span>Short conversations</span>
+        </Link>
+        <Link href="/mistakes" className="quick">
+          <IconAlert size={20} />
+          <b>Mistakes</b>
+          <span>{mistakes ? <span className="count">{mistakes} to fix</span> : "Nothing to fix"}</span>
+        </Link>
+        <Link href="/test" className="quick">
+          <IconExam size={20} />
+          <b>Tests</b>
+          <span>Check what's stuck</span>
         </Link>
       </section>
 
@@ -195,7 +148,6 @@ export default function Home() {
                 <p className="muted small">{wordOfDay.ex[1]}</p>
               </div>
             )}
-            {wordOfDay.note && <p className="small muted">{wordOfDay.note}</p>}
           </div>
         </div>
       </section>

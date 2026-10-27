@@ -46,8 +46,8 @@ export default function WriteHub() {
       <div className="page-head">
         <h1>Write in German</h1>
         <p className="sub">
-          Producing German from scratch is where it really sticks. Claude reads what you write, fixes it, and explains each
-          mistake in plain English.
+          Writing German from scratch is where it really sticks. Translate, answer questions, keep a journal or chat, and get
+          each mistake explained.
         </p>
       </div>
 

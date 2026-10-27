@@ -8,7 +8,8 @@ import { bestTest } from "@/lib/state";
 import { BOSSES } from "@/lib/tests";
 import { PASS_MARK } from "@/lib/level";
 import RankBadge from "@/components/RankBadge";
-import { IconCheck, IconSkull } from "@/components/Icons";
+import SubNav from "@/components/SubNav";
+import { IconCheck, IconExam } from "@/components/Icons";
 
 export default function LearnPage() {
   const { state } = useStore();
@@ -17,12 +18,13 @@ export default function LearnPage() {
 
   return (
     <div className="page">
+      <SubNav group="learn" />
       <div className="page-head">
-        <h1>Course</h1>
+        <h1>Lessons</h1>
         <p className="sub">
           {done === 0
-            ? "16 lessons from your first sounds to finding your way around town, with a boss test after every 4. Go in order, or jump to anything that looks useful."
-            : `${done} of ${UNITS.length} lessons finished.`}
+            ? `${UNITS.length} lessons, from your first sounds to talking about the past, with a review test after every 4.`
+            : `${done} of ${UNITS.length} finished.`}
         </p>
       </div>
 
@@ -38,7 +40,7 @@ export default function LearnPage() {
               <li>
                 <Link href={`/learn/${u.id}`} className="unit-row" data-state={s}>
                   <span className="unit-num" aria-hidden>
-                    <span>{s === "done" ? <IconCheck size={22} /> : u.n}</span>
+                    {s === "done" ? <IconCheck size={16} /> : u.n}
                   </span>
                   <span className="unit-body">
                     <h3>
@@ -50,10 +52,6 @@ export default function LearnPage() {
                     </span>
                     <p className="small muted" style={{ marginTop: 4 }}>
                       {u.blurb}
-                    </p>
-                    <p className="tiny faint" style={{ marginTop: 4 }}>
-                      {u.words.length} words
-                      {p?.completed ? `, practice best ${Math.round(p.best * 100)}%` : ""}
                     </p>
                   </span>
                   {testBest !== undefined && <RankBadge score={testBest} />}
@@ -67,17 +65,11 @@ export default function LearnPage() {
                     data-cleared={bossBest !== undefined && bossBest >= PASS_MARK ? "1" : undefined}
                   >
                     <span className="unit-num" aria-hidden>
-                      <span>
-                        <IconSkull size={22} />
-                      </span>
+                      <IconExam size={16} />
                     </span>
                     <span className="unit-body">
-                      <h3>
-                        Boss {boss.n}: {boss.title}
-                      </h3>
-                      <p className="tiny faint" style={{ marginTop: 2 }}>
-                        {bossBest !== undefined ? `Best ${Math.round(bossBest * 100)}%` : "25-question test on the last 4 lessons"}
-                      </p>
+                      <h3>Review test {boss.n}</h3>
+                      <p className="tiny faint">{boss.title}, 25 questions</p>
                     </span>
                     {bossBest !== undefined && <RankBadge score={bossBest} />}
                   </Link>

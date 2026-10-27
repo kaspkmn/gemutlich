@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { useDoneUnits } from "@/lib/useDoneUnits";
 import { askAi, AiWord, ChatResult, useAiEnabled } from "@/lib/ai-client";
 import WritingBox from "@/components/WritingBox";
+import { chatPrompt, openInClaude } from "@/lib/claude-handoff";
 import AiNotice from "@/components/AiNotice";
 import SpeakButton, { useSpeak } from "@/components/SpeakButton";
 import { NewWords } from "@/components/Correction";
@@ -37,29 +38,50 @@ function saveChat(id: string, msgs: Msg[]) {
 
 export default function ChatPage() {
   const enabled = useAiEnabled();
+  const done = useDoneUnits();
   const [scenario, setScenario] = useState<ChatScenario | null>(null);
+  const [opened, setOpened] = useState<string | null>(null);
 
-  if (scenario) return <Conversation scenario={scenario} onBack={() => setScenario(null)} disabled={enabled === false} />;
+  if (scenario) return <Conversation scenario={scenario} onBack={() => setScenario(null)} disabled={false} />;
 
   return (
     <div className="page">
       <div className="page-head">
-        <Link href="/write" className="small muted row" style={{ textDecoration: "none", gap: 4 }}>
-          <IconArrowLeft size={16} /> Write
+        <Link href="/write" className="back-link">
+          <IconArrowLeft size={15} /> Write
         </Link>
         <h1>Chat</h1>
         <p className="sub">
-          Pick a situation and talk. Replies stay simple, you can tap any message to hear it, and your mistakes get fixed
-          right under what you wrote.
+          {enabled
+            ? "Pick a situation and talk. Replies stay simple, you can play any message, and your mistakes get fixed right under what you wrote."
+            : "Pick a situation and the conversation opens in claude.ai, set up as a German role-play at your level. It replies in simple German with translations and fixes your mistakes as you go."}
         </p>
       </div>
-      {enabled === false && <AiNotice />}
+      {enabled === false && opened && (
+        <p className="notice small">
+          Opened claude.ai in a new tab with the role-play set up. If the message box is empty, it's also copied, so just paste and send.
+        </p>
+      )}
       <div className="mode-grid">
         {SCENARIOS.map((s) => (
-          <button key={s.id} className="mode-card" onClick={() => setScenario(s)}>
-            <h3>{s.title}</h3>
-            <span className="de">{s.titleDe}</span>
+          <button
+            key={s.id}
+            className="mode-card"
+            disabled={enabled === null}
+            onClick={() => {
+              if (enabled) setScenario(s);
+              else {
+                openInClaude(chatPrompt(s, done));
+                setOpened(s.id);
+              }
+            }}
+          >
+            <b>{s.title}</b>
+            <span className="de" lang="de">
+              {s.titleDe}
+            </span>
             <span className="small muted">{s.blurb}</span>
+            {enabled === false && <span className="tiny red">Opens in claude.ai</span>}
           </button>
         ))}
       </div>
@@ -141,8 +163,8 @@ function Conversation({ scenario, onBack, disabled }: { scenario: ChatScenario; 
     <div className="page">
       <div className="page-head">
         <div className="row between">
-          <button className="link-btn row" style={{ gap: 4, textDecoration: "none" }} onClick={onBack}>
-            <IconArrowLeft size={16} /> All chats
+          <button className="back-link" onClick={onBack}>
+            <IconArrowLeft size={15} /> All chats
           </button>
           <button className="link-btn small" onClick={restart}>
             Start over

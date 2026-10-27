@@ -6,6 +6,8 @@ import { AppState, CustomWord, Settings, TestRecord, WritingEntry, emptyState, h
 import { Grade, newCard, review } from "./srs";
 import { dayKey } from "./dates";
 import { getUnit } from "@/content/course";
+import type { Exercise } from "./exercises";
+import { applyAnswer, bumpSkill, type Skill } from "./mistakes";
 
 const LOCAL_KEY = "gemutlich-state-v1"; // kept so existing progress carries over
 const DIRTY_KEY = "gemutlich-dirty";
@@ -17,7 +19,15 @@ interface Store {
   ready: boolean;
   sync: SyncStatus;
   addXp: (n: number) => void;
-  recordExercise: (correct: boolean, xp: number) => void;
+  /** practice answer: XP, stats, skill, and the mistake notebook */
+  recordExercise: (correct: boolean, xp: number, ex?: Exercise) => void;
+  /** many answers at once (end of a test) */
+  recordAnswers: (items: { ex: Exercise; correct: boolean }[]) => void;
+  /** a drill without an Exercise object (numbers, speaking) */
+  recordSkill: (skill: Skill, correct: boolean, xp: number) => void;
+  removeMistake: (key: string) => void;
+  removeCustomWord: (id: string) => void;
+  markRead: (id: string, xp: number) => void;
   completeUnit: (unitId: string, accuracy: number) => { added: number };
   reviewCard: (id: string, grade: Grade) => void;
   addCustomWord: (w: Omit<CustomWord, "added">) => boolean;
@@ -174,16 +184,50 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       ready,
       sync,
       addXp: (n) => update((s) => withXp(s, n)),
-      recordExercise: (correct, xp) =>
+      recordExercise: (correct, xp, ex) =>
+        update((s) => {
+          let next: AppState = {
+            ...s,
+            stats: { ...s.stats, exercises: s.stats.exercises + 1, correct: s.stats.correct + (correct ? 1 : 0) },
+          };
+          if (ex) {
+            const t = applyAnswer({ mistakes: s.mistakes, skills: s.skills, mastered: s.stats.mastered }, ex, correct);
+            next = { ...next, mistakes: t.mistakes, skills: t.skills, stats: { ...next.stats, mastered: t.mastered } };
+          }
+          return withXp(next, xp);
+        }),
+      recordAnswers: (items) =>
+        update((s) => {
+          let t = { mistakes: s.mistakes, skills: s.skills, mastered: s.stats.mastered };
+          for (const { ex, correct } of items) t = applyAnswer(t, ex, correct);
+          return { ...s, mistakes: t.mistakes, skills: t.skills, stats: { ...s.stats, mastered: t.mastered } };
+        }),
+      recordSkill: (skill, correct, xp) =>
         update((s) =>
           withXp(
             {
               ...s,
-              stats: { ...s.stats, exercises: s.stats.exercises + 1, correct: s.stats.correct + (correct ? 1 : 0) },
+              skills: bumpSkill(s.skills, skill, correct),
+              stats: { ...s.stats, spoken: s.stats.spoken + (skill === "speaking" ? 1 : 0) },
             },
             xp
           )
         ),
+      removeMistake: (key) =>
+        update((s) => {
+          const mistakes = { ...s.mistakes };
+          delete mistakes[key];
+          return { ...s, mistakes };
+        }),
+      removeCustomWord: (id) =>
+        update((s) => {
+          const custom = { ...s.custom };
+          const cards = { ...s.cards };
+          delete custom[id];
+          delete cards[id];
+          return { ...s, custom, cards };
+        }),
+      markRead: (id, xp) => update((s) => withXp({ ...s, read: { ...s.read, [id]: Date.now() } }, s.read[id] ? Math.ceil(xp / 2) : xp)),
       completeUnit: (unitId, accuracy) => {
         const unit = getUnit(unitId);
         if (!unit) return { added: 0 };

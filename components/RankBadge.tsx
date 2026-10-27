@@ -1,13 +1,12 @@
-import { rankFor, type Rank } from "@/lib/level";
+import { PASS_MARK } from "@/lib/level";
 
-/** A rank letter (S, A, B, C, D) for a 0..1 score. */
-export default function RankBadge({ score, rank, big = false }: { score?: number; rank?: Rank; big?: boolean }) {
-  const r = rank ?? (score === undefined ? undefined : rankFor(score));
-  if (!r) return null;
-  const badge = (
-    <span className={`rank rank-${r}${big ? " big" : ""}`} aria-label={`Rank ${r}`}>
-      {r}
+/** A score as a small percentage pill. Red when it's a pass. */
+export default function RankBadge({ score }: { score?: number; rank?: string; big?: boolean }) {
+  if (score === undefined) return null;
+  const pct = Math.round(score * 100);
+  return (
+    <span className={`rank${score >= PASS_MARK ? " pass" : ""}`} aria-label={`Best score ${pct}%`}>
+      {pct}%
     </span>
   );
-  return big ? <span className={`rank-glow ${r}`}>{badge}</span> : badge;
 }

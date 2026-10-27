@@ -6,6 +6,7 @@ import { ALL_PROMPTS } from "@/content/course";
 import { useStore } from "@/lib/store";
 import { useDoneUnits } from "@/lib/useDoneUnits";
 import { askAi, GenerateResult, GradeResult, useAiEnabled, VERDICT_XP } from "@/lib/ai-client";
+import { feedbackPrompt, openInClaude } from "@/lib/claude-handoff";
 import { sample } from "@/lib/exercises";
 import WritingBox from "@/components/WritingBox";
 import Correction from "@/components/Correction";
@@ -32,6 +33,7 @@ export default function AnswerPage() {
   const [loadingQ, setLoadingQ] = useState(false);
   const [result, setResult] = useState<GradeResult | null>(null);
   const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
   const recent = useRef<string[]>([]);
 
   const reset = () => {
@@ -72,6 +74,13 @@ export default function AnswerPage() {
 
   const check = async () => {
     if (!q) return;
+    if (!enabled) {
+      // free path: open claude.ai with the writing and tutor instructions
+      openInClaude(feedbackPrompt({ mode: "answer", text, prompt: q.de, promptEn: q.en, doneUnits: done }));
+      logWriting({ mode: "answer", prompt: q.de, text, corrected: text, verdict: "sent" }, 5);
+      setSent(true);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -91,8 +100,8 @@ export default function AnswerPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <Link href="/write" className="small muted row" style={{ textDecoration: "none", gap: 4 }}>
-          <IconArrowLeft size={16} /> Write
+        <Link href="/write" className="back-link">
+          <IconArrowLeft size={15} /> Write
         </Link>
         <h1>Answer a question</h1>
         <p className="sub">Answer however you like. Made-up answers are fine; the point is writing the German.</p>
@@ -119,7 +128,19 @@ export default function AnswerPage() {
             </button>
           ))}
         {!result && (
-          <WritingBox value={text} onChange={setText} onSubmit={check} busy={busy} disabled={!q || loadingQ || enabled === false} />
+          <WritingBox
+            value={text}
+            onChange={setText}
+            onSubmit={check}
+            busy={busy}
+            disabled={!q || loadingQ || enabled === null}
+            submitLabel={enabled ? "Check my German" : "Get feedback in Claude"}
+          />
+        )}
+        {sent && (
+          <p className="small muted">
+            Opened claude.ai in a new tab with your answer filled in. If the message box is empty, it's also copied, so just paste.
+          </p>
         )}
         {error && (
           <p role="alert" style={{ color: "var(--bad)" }}>
@@ -131,12 +152,20 @@ export default function AnswerPage() {
       {result && <Correction text={text} result={result} />}
 
       <div className="row wrap">
-        <button className={`btn ${result ? "glow" : "ghost"} grow`} onClick={fromLessons}>
-          {result ? "Next question" : "Different question"}
+        <button
+          className={`btn ${result || sent ? "" : "ghost"} grow`}
+          onClick={() => {
+            setSent(false);
+            fromLessons();
+          }}
+        >
+          {result || sent ? "Next question" : "Different question"}
         </button>
-        <button className="btn ghost grow" onClick={fromClaude} disabled={enabled === false || loadingQ}>
-          New question from Claude
-        </button>
+        {enabled && (
+          <button className="btn ghost grow" onClick={fromClaude} disabled={loadingQ}>
+            New question from Claude
+          </button>
+        )}
       </div>
     </div>
   );

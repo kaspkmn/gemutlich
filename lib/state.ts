@@ -1,4 +1,5 @@
 import type { CardState } from "./srs";
+import type { MistakeEntry, SkillStat } from "./mistakes";
 import type { CourseWord, Gender, WordType } from "@/content/types";
 import { getCourseWord } from "@/content/course";
 
@@ -18,7 +19,7 @@ export interface CustomWord {
 }
 
 export type WritingMode = "translate" | "answer" | "journal" | "chat";
-export type Verdict = "perfect" | "good" | "almost" | "needs_work";
+export type Verdict = "perfect" | "good" | "almost" | "needs_work" | "sent";
 
 export interface WritingEntry {
   at: number;
@@ -59,7 +60,13 @@ export interface AppState {
   custom: Record<string, CustomWord>;
   writing: WritingEntry[];
   tests: TestRecord[];
-  stats: { exercises: number; correct: number; reviews: number; written: number };
+  /** questions answered wrong, until answered right 3 times in a row */
+  mistakes: Record<string, MistakeEntry>;
+  /** accuracy per skill (genders, verb forms, listening...) */
+  skills: Record<string, SkillStat>;
+  /** stories and dialogues finished, by id */
+  read: Record<string, number>;
+  stats: { exercises: number; correct: number; reviews: number; written: number; mastered: number; spoken: number };
   settings: Settings;
 }
 
@@ -83,7 +90,10 @@ export function emptyState(): AppState {
     custom: {},
     writing: [],
     tests: [],
-    stats: { exercises: 0, correct: 0, reviews: 0, written: 0 },
+    mistakes: {},
+    skills: {},
+    read: {},
+    stats: { exercises: 0, correct: 0, reviews: 0, written: 0, mastered: 0, spoken: 0 },
     settings: { ...DEFAULT_SETTINGS },
   };
 }
@@ -103,6 +113,9 @@ export function hydrate(raw: unknown): AppState {
     custom: r.custom ?? {},
     writing: Array.isArray(r.writing) ? r.writing : [],
     tests: Array.isArray(r.tests) ? r.tests : [],
+    mistakes: r.mistakes ?? {},
+    skills: r.skills ?? {},
+    read: r.read ?? {},
     stats: { ...base.stats, ...(r.stats ?? {}) },
     settings: { ...DEFAULT_SETTINGS, ...(r.settings ?? {}) },
   };

@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { exerciseWord } from "@/lib/exercises";
-import { PASS_MARK, RANK_LABEL, rankFor } from "@/lib/level";
-import RankBadge from "./RankBadge";
+import { PASS_MARK } from "@/lib/level";
 import { describeExercise } from "./ExerciseRunner";
 import { formatTime, type TestAnswer } from "./TestRunner";
 import { IconCheck, IconX } from "./Icons";
@@ -36,7 +35,6 @@ export default function TestResults({
   const correct = answers.filter((a) => a.correct).length;
   const total = answers.length;
   const score = total ? correct / total : 0;
-  const rank = rankFor(score);
   const passed = score >= PASS_MARK;
   const missed = answers.filter((a) => !a.correct);
   const missedWordIds = [...new Set(missed.map((a) => exerciseWord(a.ex)?.id).filter((x): x is string => Boolean(x)))];
@@ -45,34 +43,33 @@ export default function TestResults({
 
   return (
     <div className="page">
-      <section className="panel hud results">
-        <p className="faint small">{subtitle ? `${title}: ${subtitle}` : title}</p>
-        <div className="results-main">
-          <RankBadge rank={rank} big />
-          <div className="stack tight">
-            <h1>{RANK_LABEL[rank]}</h1>
-            <p className="results-score">
-              {correct}
-              <span className="faint"> / {total}</span>
-              <span className="results-pct">{Math.round(score * 100)}%</span>
-            </p>
+      <section className="panel results">
+        <p className="small faint">{subtitle ? `${title}: ${subtitle}` : title}</p>
+        <div className="row" style={{ alignItems: "flex-end", gap: 16 }}>
+          <span className={`results-big${passed ? " pass" : ""}`}>{Math.round(score * 100)}%</span>
+          <div className="stack tight" style={{ paddingBottom: 6 }}>
+            <b>{passed ? "Passed" : "Not passed yet"}</b>
+            <span className="small muted">
+              {correct} of {total} right
+            </span>
           </div>
         </div>
         <div className="results-stats">
           <div>
-            <b>{passed ? "Passed" : "Not passed"}</b>
-            <span>pass mark {Math.round(PASS_MARK * 100)}%</span>
+            <b>{Math.round(PASS_MARK * 100)}%</b>
+            <span>to pass</span>
           </div>
           <div>
-            <b>+{xp} XP</b>
-            <span>{passed ? "includes pass bonus" : "3 XP per right answer"}</span>
+            <b>+{xp}</b>
+            <span>XP</span>
           </div>
           <div>
             <b>{formatTime(seconds)}</b>
             <span>time</span>
           </div>
         </div>
-        {newBest && <p className="new-best">New personal best</p>}
+        {newBest && <p className="new-best">New best score</p>}
+        {missed.length > 0 && <p className="small faint">The {missed.length} you missed are now in your mistake notebook.</p>}
       </section>
 
       <div className="stack">
@@ -82,10 +79,7 @@ export default function TestResults({
           </button>
         )}
         {notInDeck.length > 0 && added === null && (
-          <button
-            className="btn ghost block"
-            onClick={() => setAdded(addCards(notInDeck))}
-          >
+          <button className="btn ghost block" onClick={() => setAdded(addCards(notInDeck))}>
             Add {notInDeck.length} missed {notInDeck.length === 1 ? "word" : "words"} to flashcards
           </button>
         )}
@@ -121,7 +115,7 @@ export default function TestResults({
             {shown.map((a) => (
               <li key={a.ex.id} className={`review-item ${a.correct ? "ok" : "miss"}`}>
                 <span className="review-icon" aria-label={a.correct ? "Right" : "Wrong"}>
-                  {a.correct ? <IconCheck size={18} /> : <IconX size={18} />}
+                  {a.correct ? <IconCheck size={16} /> : <IconX size={16} />}
                 </span>
                 <div className="grow stack tight">
                   <p className="small muted">{describeExercise(a.ex)}</p>
@@ -133,9 +127,9 @@ export default function TestResults({
                       </span>
                     </p>
                   )}
-                  <p className="review-answer">
-                    <span className="faint">{a.correct ? "" : "Answer: "}</span>
-                    <b>{a.answer || a.given}</b>
+                  <p>
+                    {!a.correct && <span className="faint">Answer: </span>}
+                    <b style={{ fontWeight: 600 }}>{a.answer || a.given}</b>
                   </p>
                   {a.translation && <p className="tiny faint">{a.translation}</p>}
                 </div>

@@ -75,6 +75,7 @@ export const VERDICT_LABEL: Record<Verdict, string> = {
   good: "Gut!",
   almost: "Fast!",
   needs_work: "Noch nicht ganz",
+  sent: "Sent to Claude",
 };
 
-export const VERDICT_XP: Record<Verdict, number> = { perfect: 12, good: 10, almost: 6, needs_work: 3 };
+export const VERDICT_XP: Record<Verdict, number> = { perfect: 12, good: 10, almost: 6, needs_work: 3, sent: 5 };
