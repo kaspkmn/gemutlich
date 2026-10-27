@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
-import { IconCup } from "@/components/Icons";
+import { IconShield } from "@/components/Icons";
 
 const LENGTH = 4;
 
@@ -64,8 +64,8 @@ export default function LoginPage() {
   return (
     <main className="login">
       <div className="login-card">
-        <IconCup size={48} />
-        <h1>Gemütlich</h1>
+        <IconShield size={56} />
+        <h1>Deutsch Quest</h1>
         <p className="muted">Enter your PIN</p>
         <div className="pin-dots" aria-label={`${pin.length} of ${LENGTH} digits entered`}>
           {Array.from({ length: LENGTH }, (_, i) => (

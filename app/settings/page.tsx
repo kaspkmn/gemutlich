@@ -8,10 +8,10 @@ import { hydrate } from "@/lib/state";
 import { dayKey } from "@/lib/dates";
 
 const GOALS = [
-  { v: 20, l: "Espresso", d: "20 XP, about 5 minutes" },
-  { v: 50, l: "Cappuccino", d: "50 XP, about 10 minutes" },
-  { v: 100, l: "Large latte", d: "100 XP, about 20 minutes" },
-  { v: 150, l: "Whole pot", d: "150 XP, 30 minutes or more" },
+  { v: 20, l: "Casual", d: "20 XP, about 5 minutes" },
+  { v: 50, l: "Regular", d: "50 XP, about 10 minutes" },
+  { v: 100, l: "Serious", d: "100 XP, about 20 minutes" },
+  { v: 150, l: "Intense", d: "150 XP, 30 minutes or more" },
 ];
 
 export default function SettingsPage() {
@@ -33,7 +33,7 @@ export default function SettingsPage() {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `gemutlich-backup-${dayKey()}.json`;
+    a.download = `deutsch-quest-backup-${dayKey()}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -45,7 +45,7 @@ export default function SettingsPage() {
       replaceState(hydrate(parsed));
       setMsg("Backup restored.");
     } catch {
-      setMsg("That file isn't a Gemütlich backup.");
+      setMsg("That file isn't a Deutsch Quest backup.");
     }
   };
 
@@ -56,8 +56,8 @@ export default function SettingsPage() {
       </div>
 
       <section className="panel stack">
-        <h2>Daily goal</h2>
-        <div className="stack tight" role="radiogroup" aria-label="Daily goal">
+        <h2>Daily quest</h2>
+        <div className="stack tight" role="radiogroup" aria-label="Daily quest">
           {GOALS.map((g) => (
             <label key={g.v} className="toggle" style={{ cursor: "pointer" }}>
               <span>
@@ -145,25 +145,9 @@ export default function SettingsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Look and feel</h2>
+        <h2>Profile</h2>
         <div className="field">
-          <span className="label">Theme</span>
-          <div className="chips">
-            {(
-              [
-                ["system", "Match my device"],
-                ["light", "Light"],
-                ["dark", "Dark"],
-              ] as const
-            ).map(([v, l]) => (
-              <button key={v} className="chip" aria-pressed={s.theme === v} onClick={() => updateSettings({ theme: v })}>
-                {l}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="field">
-          <label htmlFor="name">Name in the greeting</label>
+          <label htmlFor="name">Player name</label>
           <input id="name" className="text-input" value={s.name} maxLength={30} onChange={(e) => updateSettings({ name: e.target.value })} />
         </div>
       </section>

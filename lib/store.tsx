@@ -2,12 +2,12 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AppState, CustomWord, Settings, WritingEntry, emptyState, hydrate } from "./state";
+import { AppState, CustomWord, Settings, TestRecord, WritingEntry, emptyState, hydrate } from "./state";
 import { Grade, newCard, review } from "./srs";
 import { dayKey } from "./dates";
 import { getUnit } from "@/content/course";
 
-const LOCAL_KEY = "gemutlich-state-v1";
+const LOCAL_KEY = "gemutlich-state-v1"; // kept so existing progress carries over
 const DIRTY_KEY = "gemutlich-dirty";
 
 export type SyncStatus = "loading" | "synced" | "saving" | "offline" | "signed-out";
@@ -23,6 +23,7 @@ interface Store {
   addCustomWord: (w: Omit<CustomWord, "added">) => boolean;
   addCards: (ids: string[]) => number;
   logWriting: (entry: Omit<WritingEntry, "at">, xp: number) => void;
+  logTest: (rec: Omit<TestRecord, "at">, xp: number) => void;
   updateSettings: (patch: Partial<Settings>) => void;
   replaceState: (s: AppState) => void;
   resetAll: () => void;
@@ -142,13 +143,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("visibilitychange", onHide);
   }, [push, pull]);
 
-  // Apply the theme setting.
-  useEffect(() => {
-    const t = state.settings.theme;
-    if (t === "system") document.documentElement.removeAttribute("data-theme");
-    else document.documentElement.setAttribute("data-theme", t);
-  }, [state.settings.theme]);
-
   const update = useCallback(
     (fn: (s: AppState) => AppState) => {
       setState((prev) => {
@@ -243,6 +237,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             xp
           )
         ),
+      logTest: (rec, xp) =>
+        update((s) => withXp({ ...s, tests: [{ ...rec, at: Date.now() }, ...s.tests].slice(0, 300) }, xp)),
       updateSettings: (patch) => update((s) => ({ ...s, settings: { ...s.settings, ...patch } })),
       replaceState: (s) => update(() => hydrate(s)),
       resetAll: () => update(() => ({ ...emptyState(), settings: latest.current.settings })),

@@ -131,7 +131,7 @@ export default function AnswerPage() {
       {result && <Correction text={text} result={result} />}
 
       <div className="row wrap">
-        <button className={`btn ${result ? "honey" : "ghost"} grow`} onClick={fromLessons}>
+        <button className={`btn ${result ? "glow" : "ghost"} grow`} onClick={fromLessons}>
           {result ? "Next question" : "Different question"}
         </button>
         <button className="btn ghost grow" onClick={fromClaude} disabled={enabled === false || loadingQ}>

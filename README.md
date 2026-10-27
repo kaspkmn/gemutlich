@@ -1,16 +1,21 @@
-# Gemütlich
+# Deutsch Quest
 
-Your own cozy corner for learning German, from total beginner up. Next.js on Vercel, Supabase for syncing progress between your phone and computer, and Claude for checking your writing.
+Your own German course, from total beginner up. Next.js on Vercel, with Supabase syncing your progress between your phone and computer.
+
+## What it costs
+
+Everything is free except the Write tab. GitHub, Vercel and Supabase all work on their free plans. The Write tab uses Claude to correct your writing, which needs an Anthropic API key with paid credit. That's optional, and the rest of the site works fully without it.
 
 ## What's inside
 
 - **Course**: 16 lessons (about 280 words) from pronunciation to finding your way around town. Each one has words with audio, short grammar notes, and a round of about 20 exercises.
 - **Flashcards**: spaced repetition. Finishing a lesson adds its words to your deck, and cards come back right before you'd forget them.
-- **Practice**: typing the German, dictation (hear it, type it), verb endings, sentence building, der/die/das drills, listening, and a "tricky words" round.
-- **Write** (uses Claude): translate sentences, answer questions about your life, keep a short journal, or chat in a café, bakery, or anywhere. Your mistakes are corrected and explained, and you can add new words straight to your flashcards.
-- **Progress**: daily goal (the coffee cup), streaks, a study calendar, and per-lesson progress.
+- **Practice**: typing the German, dictation, verb endings, sentence building, der/die/das drills, listening, and a "tricky words" round.
+- **Tests**: graded tests with no hints. Multiple choice, written answers, listening and sentence building, with a rank (S, A, B, C, D) and a full answer review at the end. There's a test for every lesson, a boss test after every 4 lessons, a final exam, and a custom test builder. 70% to pass.
+- **Write** (optional, needs an API key): translate sentences, answer questions, keep a journal, or chat, with every mistake explained.
+- **Progress**: levels and XP, a daily quest, streaks, a study calendar, and test results.
 
-Audio uses your browser's built-in German voice, so there's nothing extra to pay for. On iPhone you can download a nicer German voice in Settings > Accessibility > Spoken Content > Voices > German.
+Audio uses your browser's built-in German voice, so there's nothing to pay for. On iPhone you can download a nicer German voice in Settings > Accessibility > Spoken Content > Voices > German.
 
 ## Setup
 
@@ -20,13 +25,12 @@ Audio uses your browser's built-in German voice, so there's nothing extra to pay
 2. Open **SQL Editor**, paste in `supabase/schema.sql`, and run it. This makes one table, `german_progress`, locked down so only your site's server can touch it.
 3. From **Project Settings > API**, copy the **Project URL** and the **secret key** (starts with `sb_secret_`; the older `service_role` key works too).
 
-### 2. Anthropic API key (for the Write section)
+### 2. Anthropic API key (optional, costs money)
 
-1. Go to console.anthropic.com, add a little credit, and create an API key.
-2. This is billed separately from a Claude.ai subscription. The default model is Claude Haiku 5.5, which is very cheap: a whole evening of writing practice costs pennies.
-3. Want more detailed feedback? Set `ANTHROPIC_MODEL=claude-sonnet-5-5` (costs more per check).
+Only the Write tab needs this. Skip it and everything else works.
 
-Everything else in the app works without this key; only the Write section needs it.
+1. Go to console.anthropic.com, add credit, and create an API key. This is billed separately from a Claude.ai subscription.
+2. The default model is Claude Haiku 5.5, which is cheap per check.
 
 ### 3. GitHub and Vercel
 
@@ -40,7 +44,7 @@ Everything else in the app works without this key; only the Write section needs 
 | `AUTH_SECRET` | Any long random string, 32+ characters |
 | `SUPABASE_URL` | From step 1 |
 | `SUPABASE_SECRET_KEY` | From step 1 |
-| `ANTHROPIC_API_KEY` | From step 2 |
+| `ANTHROPIC_API_KEY` | From step 2 (optional) |
 
 4. Deploy. Open the site, enter your PIN, and you're in. On your phone, use **Share > Add to Home Screen** and it opens like an app.
 

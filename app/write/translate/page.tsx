@@ -176,7 +176,7 @@ export default function TranslatePage() {
       {result && <Correction text={text} result={result} />}
 
       {(result || revealed) && (
-        <button className="btn honey block" onClick={next}>
+        <button className="btn glow block" onClick={next}>
           Next sentence
         </button>
       )}

@@ -5,13 +5,15 @@ import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import { useStore } from "@/lib/store";
 import { currentStreak, dayKey } from "@/lib/dates";
-import { IconBean, IconBook, IconCards, IconCup, IconGear, IconList, IconPen, IconTarget } from "./Icons";
+import { levelInfo } from "@/lib/level";
+import { IconBook, IconCards, IconExam, IconFlame, IconGear, IconHome, IconList, IconPen, IconShield, IconTarget } from "./Icons";
 
 const NAV = [
-  { href: "/", label: "Today", Icon: IconCup },
+  { href: "/", label: "Home", Icon: IconHome },
   { href: "/learn", label: "Learn", Icon: IconBook },
   { href: "/review", label: "Cards", Icon: IconCards },
   { href: "/practice", label: "Practice", Icon: IconTarget },
+  { href: "/test", label: "Tests", Icon: IconExam },
   { href: "/write", label: "Write", Icon: IconPen },
 ];
 
@@ -32,6 +34,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return Object.values(state.cards).filter((c) => c.due <= today).length;
   }, [state.cards]);
   const streak = currentStreak(state.days);
+  const { level } = levelInfo(state.xp);
 
   if (pathname === "/login") return <>{children}</>;
 
@@ -41,14 +44,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <div className="shell">
         <header className="topbar">
-          <Link href="/" className="brand" aria-label="Gemütlich home">
-            <IconCup size={26} />
-            Gemütlich
+          <Link href="/" className="brand" aria-label="Deutsch Quest home">
+            <IconShield size={24} />
+            Deutsch Quest
           </Link>
           <div className="topbar-actions">
             <span className="sync-dot" data-s={sync} title={SYNC_LABEL[sync]} aria-label={SYNC_LABEL[sync]} role="status" />
-            <Link href="/progress" className="icon-link" title="Your progress">
-              <IconBean size={20} />
+            <Link href="/progress" className="lv-chip" title="Your progress">
+              <small>LV</small>
+              {level}
+            </Link>
+            <Link href="/progress" className="icon-link streak-link" title={`${streak} day streak`}>
+              <IconFlame size={19} className="flame" />
               <span>{streak}</span>
               <span className="sr-only">day streak</span>
             </Link>
@@ -68,7 +75,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <li key={href}>
               <Link href={href} aria-current={isActive(href) ? "page" : undefined}>
                 <span className="icon-wrap">
-                  <Icon size={24} />
+                  <Icon size={23} />
                   {href === "/review" && due > 0 && <span className="badge">{due > 99 ? "99+" : due}</span>}
                 </span>
                 {label}

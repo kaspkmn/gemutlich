@@ -4,19 +4,16 @@ import { StoreProvider } from "@/lib/store";
 import AppShell from "@/components/AppShell";
 
 export const metadata: Metadata = {
-  title: "Gemütlich",
-  description: "Your own cozy corner for learning German.",
-  appleWebApp: { capable: true, title: "Gemütlich", statusBarStyle: "default" },
+  title: "Deutsch Quest",
+  description: "Your own German course: lessons, flashcards, practice and tests.",
+  appleWebApp: { capable: true, title: "Deutsch Quest", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ede3cf" },
-    { media: "(prefers-color-scheme: dark)", color: "#1d1612" },
-  ],
+  themeColor: "#050505",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -27,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=Young+Serif&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap"
         />
       </head>
       <body>

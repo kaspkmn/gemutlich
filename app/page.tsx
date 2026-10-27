@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
+import { bestTest } from "@/lib/state";
 import { ALL_WORDS, UNITS } from "@/content/course";
 import { currentStreak, dayKey, hashString } from "@/lib/dates";
-import Cup from "@/components/Cup";
+import { levelInfo, PASS_MARK } from "@/lib/level";
+import { BOSSES } from "@/lib/tests";
 import SpeakButton from "@/components/SpeakButton";
 import GenderTag, { GermanWord } from "@/components/GenderTag";
-import { IconBook, IconCards, IconPen, IconTarget } from "@/components/Icons";
+import { IconBook, IconCards, IconCheck, IconExam, IconFlame, IconPen, IconSkull, IconTarget } from "@/components/Icons";
 
 function greeting(h: number) {
   if (h < 11) return { de: "Guten Morgen", en: "Good morning" };
@@ -23,72 +25,116 @@ export default function Home() {
   useEffect(() => setHour(new Date().getHours()), []);
 
   const today = dayKey();
-  const xpToday = state.days[today] ?? 0;
+  const xpToday = ready ? (state.days[today] ?? 0) : 0;
   const goal = state.settings.dailyGoal;
+  const questDone = xpToday >= goal;
   const streak = currentStreak(state.days);
+  const lv = levelInfo(state.xp);
   const due = useMemo(() => Object.values(state.cards).filter((c) => c.due <= today).length, [state.cards, today]);
   const nextUnit = UNITS.find((u) => !state.units[u.id]?.completed);
-  const doneCount = UNITS.filter((u) => state.units[u.id]?.completed).length;
+  const doneIds = UNITS.filter((u) => state.units[u.id]?.completed).map((u) => u.id);
+  const passed = new Set(state.tests.filter((t) => t.total && t.correct / t.total >= PASS_MARK).map((t) => t.id)).size;
+  // a boss whose lessons are all done but hasn't been beaten yet
+  const bossReady = BOSSES.find((b) => b.units.every((u) => doneIds.includes(u)) && (bestTest(state, `boss:${b.n}`) ?? 0) < PASS_MARK);
   const wordOfDay = ALL_WORDS[hashString(today) % ALL_WORDS.length];
   const g = hour === null ? null : greeting(hour);
-
-  const goalText =
-    xpToday >= goal
-      ? "Today's cup is full. Anything more is a bonus."
-      : xpToday === 0
-        ? `Fill today's cup: ${goal} XP.`
-        : `${goal - xpToday} XP to fill today's cup.`;
+  const name = state.settings.name;
 
   return (
     <div className="page">
-      <section className="greeting" aria-live="polite">
-        <h1>{g ? `${g.de}${state.settings.name ? `, ${state.settings.name}` : ""}!` : "\u00a0"}</h1>
-        <p className="en">{g ? g.en : "\u00a0"}</p>
+      <section className="greeting">
+        <h1>{g ? `${g.de}${name ? `, ${name}` : ""}!` : " "}</h1>
+        <p className="en">{g ? g.en : " "}</p>
       </section>
 
-      <section className="panel today">
-        <Cup value={ready ? xpToday : 0} goal={goal} />
-        <div className="stack tight">
-          <p>{goalText}</p>
-          <div className="stat-line">
-            <div className="stat">
-              <b>{xpToday}</b>
-              <span>XP today</span>
+      <section className="panel hud player" aria-label="Your stats">
+        <div className="player-top">
+          <div className="lv-hex" aria-label={`Level ${lv.level}`}>
+            <span>
+              <small>LV</small>
+              <b>{lv.level}</b>
+            </span>
+          </div>
+          <div className="grow">
+            <p className="player-name">{name || "Player"}</p>
+            <div className="segbar" style={{ marginTop: 6 }} aria-label={`${lv.into} of ${lv.need} XP to level ${lv.level + 1}`}>
+              <div style={{ width: `${Math.round(lv.pct * 100)}%` }} />
             </div>
-            <div className="stat">
-              <b>{streak}</b>
-              <span>day streak</span>
+            <div className="xp-line">
+              <span>
+                {lv.into} / {lv.need} XP
+              </span>
+              <span>to level {lv.level + 1}</span>
             </div>
-            <div className="stat">
-              <b>{Object.keys(state.cards).length}</b>
-              <span>words</span>
-            </div>
+          </div>
+        </div>
+        <div className="stat-line">
+          <div className="stat">
+            <b className="row" style={{ gap: 4 }}>
+              <IconFlame size={20} className="flame" />
+              {streak}
+            </b>
+            <span>day streak</span>
+          </div>
+          <div className="stat">
+            <b>{Object.keys(state.cards).length}</b>
+            <span>words</span>
+          </div>
+          <div className="stat">
+            <b>{passed}</b>
+            <span>tests passed</span>
           </div>
         </div>
       </section>
 
+      <section className={`panel quest${questDone ? " complete" : ""}`} aria-label="Daily quest">
+        <div className="quest-head">
+          <b>{questDone ? "Daily quest complete" : `Daily quest: earn ${goal} XP`}</b>
+          <span>
+            {questDone && <IconCheck size={16} />} {Math.min(xpToday, goal)} / {goal}
+          </span>
+        </div>
+        <div className={`segbar${questDone ? " done" : ""}`}>
+          <div style={{ width: `${Math.min(100, (xpToday / goal) * 100)}%` }} />
+        </div>
+        {questDone && xpToday > goal && <p className="tiny faint">+{xpToday - goal} bonus XP today</p>}
+      </section>
+
       <section className="action-list" aria-label="What to do next">
         {nextUnit ? (
-          <Link href={`/learn/${nextUnit.id}`} className="action">
+          <Link href={`/learn/${nextUnit.id}`} className="action primary">
             <span className="ico">
               <IconBook />
             </span>
             <span className="grow">
-              <b>{doneCount === 0 ? "Start your first lesson" : "Next lesson"}</b>
+              <b>{doneIds.length === 0 ? "Start your first lesson" : "Next lesson"}</b>
               <span className="muted small" style={{ display: "block" }}>
                 {nextUnit.n}. {nextUnit.title}
               </span>
             </span>
           </Link>
         ) : (
-          <Link href="/learn" className="action">
+          <Link href="/test/run?id=final" className="action primary">
             <span className="ico">
-              <IconBook />
+              <IconExam />
             </span>
             <span className="grow">
               <b>Course complete</b>
               <span className="muted small" style={{ display: "block" }}>
-                Revisit any lesson to keep it fresh.
+                Take the final exam
+              </span>
+            </span>
+          </Link>
+        )}
+        {bossReady && (
+          <Link href={`/test/run?id=boss:${bossReady.n}`} className="action">
+            <span className="ico">
+              <IconSkull />
+            </span>
+            <span className="grow">
+              <b>Boss {bossReady.n} is ready</b>
+              <span className="muted small" style={{ display: "block" }}>
+                {bossReady.title}: test yourself on 4 lessons
               </span>
             </span>
           </Link>
@@ -105,17 +151,6 @@ export default function Home() {
           </span>
           {due > 0 && <span className="count">{due}</span>}
         </Link>
-        <Link href="/write" className="action">
-          <span className="ico">
-            <IconPen />
-          </span>
-          <span className="grow">
-            <b>Write in German</b>
-            <span className="muted small" style={{ display: "block" }}>
-              Translate, answer questions, or chat, with corrections
-            </span>
-          </span>
-        </Link>
         <Link href="/practice" className="action">
           <span className="ico">
             <IconTarget />
@@ -123,7 +158,18 @@ export default function Home() {
           <span className="grow">
             <b>Practice</b>
             <span className="muted small" style={{ display: "block" }}>
-              Listening, typing, genders, verb endings
+              Typing, listening, genders, verb endings
+            </span>
+          </span>
+        </Link>
+        <Link href="/write" className="action">
+          <span className="ico">
+            <IconPen />
+          </span>
+          <span className="grow">
+            <b>Write in German</b>
+            <span className="muted small" style={{ display: "block" }}>
+              Translate, answer questions, journal, chat
             </span>
           </span>
         </Link>
@@ -134,7 +180,7 @@ export default function Home() {
         <div className={`tile g-${wordOfDay.gender ?? ""}`}>
           <div className="stack">
             <div className="row">
-              <p className="tile-word grow">
+              <p className="tile-word grow" lang="de">
                 <GermanWord de={wordOfDay.de} gender={wordOfDay.gender} />
               </p>
               <SpeakButton text={wordOfDay.de} />
@@ -143,7 +189,9 @@ export default function Home() {
             <GenderTag gender={wordOfDay.gender} />
             {wordOfDay.ex && (
               <div className="example">
-                <p className="de">{wordOfDay.ex[0]}</p>
+                <p className="de" lang="de">
+                  {wordOfDay.ex[0]}
+                </p>
                 <p className="muted small">{wordOfDay.ex[1]}</p>
               </div>
             )}

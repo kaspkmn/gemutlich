@@ -118,7 +118,7 @@ export default function JournalPage() {
               Keep writing from the corrected version
             </button>
             <button
-              className="btn honey grow"
+              className="btn glow grow"
               onClick={() => {
                 setText("");
                 setResult(null);

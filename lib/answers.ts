@@ -94,3 +94,41 @@ export function tokens(sentence: string): string[] {
     .split(/\s+/)
     .filter(Boolean);
 }
+
+// ── English answers ("what does this German word mean?") ──────────────────
+
+function normEn(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/\.\.\.|…/g, " ")
+    .replace(/[.!?"'’‘]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const LEADING = /^(to|a|an|the) /;
+
+/** Every acceptable English answer: "big, tall" → ["big", "tall", ...]. */
+export function englishVariants(en: string): string[] {
+  const noParens = en.replace(/\([^)]*\)/g, " ");
+  const parts = noParens.split(/[,/;?!]| or /);
+  const out = new Set<string>();
+  for (const p of [...parts, noParens]) {
+    const n = normEn(p);
+    if (!n) continue;
+    out.add(n);
+    out.add(n.replace(LEADING, ""));
+  }
+  return [...out];
+}
+
+export function checkEnglish(input: string, en: string): CheckResult {
+  const n = normEn(input).replace(LEADING, "");
+  if (!n) return { status: "wrong" };
+  const variants = englishVariants(en);
+  if (variants.includes(n)) return { status: "correct" };
+  for (const v of variants) {
+    if (v.length >= 5 && lev(n, v) <= 1) return { status: "typo", message: `Watch the spelling: ${en}` };
+  }
+  return { status: "wrong" };
+}

@@ -30,13 +30,22 @@ export interface WritingEntry {
   note?: string;
 }
 
+export interface TestRecord {
+  at: number;
+  /** "unit:food", "boss:1", "final" or "custom" */
+  id: string;
+  title: string;
+  correct: number;
+  total: number;
+  seconds: number;
+}
+
 export interface Settings {
   dailyGoal: number;
   rate: number;
   voiceURI: string;
   direction: "de-en" | "en-de" | "mixed";
   autoplay: boolean;
-  theme: "system" | "light" | "dark";
   name: string;
 }
 
@@ -49,6 +58,7 @@ export interface AppState {
   cards: Record<string, CardState>;
   custom: Record<string, CustomWord>;
   writing: WritingEntry[];
+  tests: TestRecord[];
   stats: { exercises: number; correct: number; reviews: number; written: number };
   settings: Settings;
 }
@@ -59,7 +69,6 @@ export const DEFAULT_SETTINGS: Settings = {
   voiceURI: "",
   direction: "de-en",
   autoplay: true,
-  theme: "system",
   name: "Kas",
 };
 
@@ -73,6 +82,7 @@ export function emptyState(): AppState {
     cards: {},
     custom: {},
     writing: [],
+    tests: [],
     stats: { exercises: 0, correct: 0, reviews: 0, written: 0 },
     settings: { ...DEFAULT_SETTINGS },
   };
@@ -92,6 +102,7 @@ export function hydrate(raw: unknown): AppState {
     cards: r.cards ?? {},
     custom: r.custom ?? {},
     writing: Array.isArray(r.writing) ? r.writing : [],
+    tests: Array.isArray(r.tests) ? r.tests : [],
     stats: { ...base.stats, ...(r.stats ?? {}) },
     settings: { ...DEFAULT_SETTINGS, ...(r.settings ?? {}) },
   };
@@ -104,4 +115,15 @@ export function findWord(state: AppState, id: string): CourseWord | undefined {
   const w = state.custom[id];
   if (!w) return undefined;
   return { ...w, id, unitId: "custom", custom: true };
+}
+
+/** Best score (0..1) for a test id, or undefined if never taken. */
+export function bestTest(state: AppState, id: string): number | undefined {
+  let best: number | undefined;
+  for (const t of state.tests) {
+    if (t.id !== id || !t.total) continue;
+    const s = t.correct / t.total;
+    if (best === undefined || s > best) best = s;
+  }
+  return best;
 }

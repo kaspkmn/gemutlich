@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { UNITS } from "@/content/course";
 import { addDays, currentStreak, dayKey, longestStreak, parseDay } from "@/lib/dates";
 import { strength } from "@/lib/srs";
+import { levelInfo, PASS_MARK } from "@/lib/level";
 
 const WEEKS = 18;
 
@@ -33,13 +34,19 @@ export default function ProgressPage() {
   const accuracy = state.stats.exercises ? Math.round((state.stats.correct / state.stats.exercises) * 100) : 0;
   const done = UNITS.filter((u) => state.units[u.id]?.completed).length;
 
+  const lv = levelInfo(state.xp);
+  const testsPassed = new Set(state.tests.filter((t) => t.total && t.correct / t.total >= PASS_MARK).map((t) => t.id)).size;
+
   const stats = [
+    { v: lv.level, l: "level" },
     { v: currentStreak(state.days), l: "day streak" },
     { v: longestStreak(state.days), l: "longest streak" },
     { v: state.xp, l: "total XP" },
     { v: cards.length, l: "words in your deck" },
     { v: strong + familiar, l: "words that have stuck" },
     { v: `${accuracy}%`, l: "exercise accuracy" },
+    { v: state.tests.length, l: "tests taken" },
+    { v: testsPassed, l: "different tests passed" },
     { v: state.stats.written, l: "things written in German" },
     { v: state.stats.reviews, l: "flashcard reviews" },
   ];
@@ -73,7 +80,7 @@ export default function ProgressPage() {
             )
           )}
         </div>
-        <p className="tiny faint">Darker squares are days you filled your cup ({goal} XP) or more.</p>
+        <p className="tiny faint">Brighter squares are days you finished your daily quest ({goal} XP) or more.</p>
       </section>
 
       <section className="panel stack">

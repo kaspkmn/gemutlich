@@ -81,6 +81,9 @@ export default function UnitPage() {
                 Next lesson: {nextUnit.title}
               </button>
             )}
+            <Link className="btn ghost block" href={`/test/run?id=unit:${unit.id}`}>
+              Take the lesson test
+            </Link>
             {result.added > 0 && (
               <Link className="btn ghost block" href="/review">
                 Review the new cards
@@ -151,9 +154,12 @@ export default function UnitPage() {
               Finished {progress.times} {progress.times === 1 ? "time" : "times"}, best score {Math.round(progress.best * 100)}%.
             </p>
           )}
-          <button className="btn honey block" onClick={() => setRun(lessonExercises(unit))}>
+          <button className="btn glow block" onClick={() => setRun(lessonExercises(unit))}>
             Start practice
           </button>
+          <Link className="btn ghost block" href={`/test/run?id=unit:${unit.id}`}>
+            Take the lesson test
+          </Link>
         </section>
       )}
     </div>

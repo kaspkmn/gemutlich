@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Exercise } from "@/lib/exercises";
 import { shuffle } from "@/lib/exercises";
-import { checkText, checkWord, tokens } from "@/lib/answers";
+import { checkEnglish, checkText, checkWord, tokens } from "@/lib/answers";
 import { useStore } from "@/lib/store";
 import SpeakButton, { useSpeak } from "./SpeakButton";
 import UmlautKeys from "./UmlautKeys";
@@ -16,18 +16,22 @@ export interface RunResult {
   xp: number;
 }
 
-interface Answer {
+export interface Answer {
   correct: boolean;
   /** shown as a yellow "almost": counts as wrong but gently */
   almost?: boolean;
   message?: string;
+  /** the right answer, for showing afterwards */
   answer?: string;
   translation?: string;
   speak?: string;
+  /** what the learner gave */
+  given?: string;
 }
 
 const PRAISE = ["Richtig!", "Genau!", "Super!", "Sehr gut!", "Prima!", "Toll!"];
 
+/** Practice mode: instant feedback, misses come back once at the end. */
 export default function ExerciseRunner({
   exercises,
   onDone,
@@ -102,14 +106,14 @@ export default function ExerciseRunner({
         <button className="close-btn" onClick={onExit} aria-label="Stop practicing">
           <IconX />
         </button>
-        <div className="progress" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
+        <div className="segbar grow" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
           <div style={{ width: `${pct}%` }} />
         </div>
       </div>
 
       {isRetry && <p className="tiny faint">Second try</p>}
 
-      <ExerciseView key={ex.id} ex={ex} locked={!!fb} onAnswer={answer} />
+      <ExerciseView key={ex.id} ex={ex} locked={!!fb} reveal onAnswer={answer} />
 
       {fb && (
         <div className={`feedback ${fb.correct ? "good" : fb.almost ? "warn" : "bad"}`} role="status">
@@ -136,30 +140,41 @@ export default function ExerciseRunner({
 
 // ── individual exercise views ──────────────────────────────────────────────
 
-type ViewProps = { ex: Exercise; locked: boolean; onAnswer: (a: Answer) => void };
+type ViewProps = {
+  ex: Exercise;
+  locked: boolean;
+  /** false in tests: don't show right/wrong when picking */
+  reveal: boolean;
+  onAnswer: (a: Answer) => void;
+};
 
-function ExerciseView({ ex, locked, onAnswer }: ViewProps) {
+export function ExerciseView(props: ViewProps) {
+  const { ex } = props;
   switch (ex.kind) {
     case "mc":
-      return <MultipleChoice ex={ex} locked={locked} onAnswer={onAnswer} />;
+      return <MultipleChoice {...props} ex={ex} />;
     case "listen":
-      return <Listen ex={ex} locked={locked} onAnswer={onAnswer} />;
+      return <Listen {...props} ex={ex} />;
     case "type":
-      return <TypeWord ex={ex} locked={locked} onAnswer={onAnswer} />;
+      return <TypeWord {...props} ex={ex} />;
+    case "typeEn":
+      return <TypeEnglish {...props} ex={ex} />;
     case "gender":
-      return <GenderPick ex={ex} locked={locked} onAnswer={onAnswer} />;
+      return <GenderPick {...props} ex={ex} />;
     case "match":
-      return <Match ex={ex} locked={locked} onAnswer={onAnswer} />;
+      return <Match {...props} ex={ex} />;
     case "fill":
-      return <Fill ex={ex} locked={locked} onAnswer={onAnswer} />;
+      return <Fill {...props} ex={ex} />;
+    case "fillType":
+      return <FillType {...props} ex={ex} />;
     case "build":
-      return <Build ex={ex} locked={locked} onAnswer={onAnswer} />;
+      return <Build {...props} ex={ex} />;
     case "choice":
-      return <Choice ex={ex} locked={locked} onAnswer={onAnswer} />;
+      return <Choice {...props} ex={ex} />;
     case "dictation":
-      return <Dictation ex={ex} locked={locked} onAnswer={onAnswer} />;
+      return <Dictation {...props} ex={ex} />;
     case "conj":
-      return <Conjugate ex={ex} locked={locked} onAnswer={onAnswer} />;
+      return <Conjugate {...props} ex={ex} />;
   }
 }
 
@@ -167,14 +182,14 @@ function Options({
   options,
   answer,
   locked,
+  reveal,
   onPick,
-  render,
 }: {
   options: string[];
   answer: string;
   locked: boolean;
+  reveal: boolean;
   onPick: (opt: string) => void;
-  render?: (opt: string) => React.ReactNode;
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   const pick = useCallback(
@@ -189,6 +204,7 @@ function Options({
   useEffect(() => {
     if (locked) return;
     const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       const n = Number(e.key);
       if (n >= 1 && n <= options.length) pick(options[n - 1]);
     };
@@ -200,11 +216,14 @@ function Options({
     <div className="options">
       {options.map((o, idx) => {
         let s: string | undefined;
-        if (picked) s = o === answer ? "right" : o === picked ? "wrong" : "dim";
+        if (picked) {
+          if (reveal) s = o === answer ? "right" : o === picked ? "wrong" : "dim";
+          else s = o === picked ? "picked" : "dim";
+        }
         return (
           <button key={o} className="option" data-state={s} disabled={locked || !!picked} onClick={() => pick(o)}>
             <span className="key">{idx + 1}</span>
-            <span>{render ? render(o) : o}</span>
+            <span>{o}</span>
           </button>
         );
       })}
@@ -223,24 +242,28 @@ function useAutoSpeak(text: string | undefined, enabled: boolean) {
   }, []);
 }
 
-function MultipleChoice({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { kind: "mc" }> }) {
+function MultipleChoice({ ex, locked, reveal, onAnswer }: ViewProps & { ex: Extract<Exercise, { kind: "mc" }> }) {
   const w = ex.word;
   useAutoSpeak(w.de, ex.dir === "de-en");
   return (
     <div className="stack">
       <p className="prompt-label">{ex.dir === "de-en" ? "What does this mean?" : "How do you say this in German?"}</p>
       <div className="row">
-        <p className="prompt-big grow">{ex.dir === "de-en" ? w.de : w.en}</p>
+        <p className="prompt-big grow" lang={ex.dir === "de-en" ? "de" : undefined}>
+          {ex.dir === "de-en" ? w.de : w.en}
+        </p>
         {ex.dir === "de-en" && <SpeakButton text={w.de} />}
       </div>
       <Options
         options={ex.options}
         answer={ex.answer}
         locked={locked}
+        reveal={reveal}
         onPick={(o) =>
           onAnswer({
             correct: o === ex.answer,
             answer: ex.answer,
+            given: o,
             translation: ex.dir === "de-en" ? undefined : w.en,
             speak: w.de,
           })
@@ -250,7 +273,7 @@ function MultipleChoice({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exer
   );
 }
 
-function Listen({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { kind: "listen" }> }) {
+function Listen({ ex, locked, reveal, onAnswer }: ViewProps & { ex: Extract<Exercise, { kind: "listen" }> }) {
   const say = useSpeak();
   const w = ex.word;
   useAutoSpeak(w.de, true);
@@ -267,7 +290,8 @@ function Listen({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { 
         options={ex.options}
         answer={w.de}
         locked={locked}
-        onPick={(o) => onAnswer({ correct: o === w.de, answer: w.de, translation: w.en })}
+        reveal={reveal}
+        onPick={(o) => onAnswer({ correct: o === w.de, answer: w.de, given: o, translation: w.en })}
       />
     </div>
   );
@@ -277,10 +301,12 @@ function TextAnswer({
   locked,
   onSubmit,
   placeholder = "Type in German",
+  german = true,
 }: {
   locked: boolean;
   onSubmit: (v: string) => void;
   placeholder?: string;
+  german?: boolean;
 }) {
   const [v, setV] = useState("");
   const ref = useRef<HTMLInputElement>(null);
@@ -305,13 +331,13 @@ function TextAnswer({
         autoCorrect="off"
         autoCapitalize="off"
         spellCheck={false}
-        lang="de"
+        lang={german ? "de" : "en"}
         disabled={locked}
         aria-label={placeholder}
       />
       {!locked && (
         <>
-          <UmlautKeys target={ref} onInsert={setV} />
+          {german && <UmlautKeys target={ref} onInsert={setV} />}
           <button className="btn block" type="submit" disabled={!v.trim()}>
             Check
           </button>
@@ -337,6 +363,7 @@ function TypeWord({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, 
             almost: r.status === "almost",
             message: r.message,
             answer: w.de,
+            given: v,
             speak: w.de,
           });
         }}
@@ -345,27 +372,57 @@ function TypeWord({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, 
   );
 }
 
-function GenderPick({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { kind: "gender" }> }) {
+function TypeEnglish({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { kind: "typeEn" }> }) {
+  const w = ex.word;
+  useAutoSpeak(w.de, true);
+  return (
+    <div className="stack">
+      <p className="prompt-label">Write what this means in English</p>
+      <div className="row">
+        <p className="prompt-big grow" lang="de">
+          {w.de}
+        </p>
+        <SpeakButton text={w.de} />
+      </div>
+      <TextAnswer
+        locked={locked}
+        german={false}
+        placeholder="Type in English"
+        onSubmit={(v) => {
+          const r = checkEnglish(v, w.en);
+          onAnswer({
+            correct: r.status !== "wrong",
+            message: r.message,
+            answer: w.en,
+            given: v,
+            speak: w.de,
+          });
+        }}
+      />
+    </div>
+  );
+}
+
+function GenderPick({ ex, locked, reveal, onAnswer }: ViewProps & { ex: Extract<Exercise, { kind: "gender" }> }) {
   const w = ex.word;
   const [article, ...rest] = w.de.split(" ");
   const bare = rest.join(" ");
   return (
     <div className="stack">
       <p className="prompt-label">der, die or das?</p>
-      <div className="row">
-        <p className="prompt-big grow">
+      <div>
+        <p className="prompt-big" lang="de">
           ___ {bare}
-          <span className="tile-en" style={{ display: "block", fontFamily: "var(--font-body)" }}>
-            {w.en}
-          </span>
         </p>
+        <p className="tile-en">{w.en}</p>
       </div>
       <div className="gender-options">
         <Options
           options={["der", "die", "das"]}
           answer={article}
           locked={locked}
-          onPick={(o) => onAnswer({ correct: o === article, answer: w.de, speak: w.de })}
+          reveal={reveal}
+          onPick={(o) => onAnswer({ correct: o === article, answer: w.de, given: `${o} ${bare}`, speak: w.de })}
         />
       </div>
     </div>
@@ -453,14 +510,14 @@ function Match({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { k
   );
 }
 
-function Fill({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { kind: "fill" }> }) {
+function Fill({ ex, locked, reveal, onAnswer }: ViewProps & { ex: Extract<Exercise, { kind: "fill" }> }) {
   const [chosen, setChosen] = useState<string | null>(null);
   const full = ex.de.replace("___", ex.answer);
   const [before, after] = ex.de.split("___");
   return (
     <div className="stack">
       <p className="prompt-label">Fill in the blank</p>
-      <p className="sentence">
+      <p className="sentence" lang="de">
         {before}
         <span className="blank">{chosen ?? " "}</span>
         {after}
@@ -470,9 +527,39 @@ function Fill({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { ki
         options={ex.options}
         answer={ex.answer}
         locked={locked}
+        reveal={reveal}
         onPick={(o) => {
           setChosen(o);
-          onAnswer({ correct: o === ex.answer, answer: full, speak: full });
+          onAnswer({ correct: o === ex.answer, answer: full, given: ex.de.replace("___", o), speak: full });
+        }}
+      />
+    </div>
+  );
+}
+
+function FillType({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { kind: "fillType" }> }) {
+  const full = ex.de.replace("___", ex.answer);
+  const [before, after] = ex.de.split("___");
+  return (
+    <div className="stack">
+      <p className="prompt-label">Type the missing word</p>
+      <p className="sentence" lang="de">
+        {before}
+        <span className="blank">&nbsp;</span>
+        {after}
+      </p>
+      <p className="muted">{ex.en}</p>
+      <TextAnswer
+        locked={locked}
+        placeholder="Missing word"
+        onSubmit={(v) => {
+          const r = checkText(v, [ex.answer]);
+          onAnswer({
+            correct: r.status !== "wrong",
+            answer: full,
+            given: ex.de.replace("___", v.trim()),
+            speak: full,
+          });
         }}
       />
     </div>
@@ -502,12 +589,7 @@ function Build({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { k
       </div>
       <div className="build-bank">
         {ex.tiles.map((t, idx) => (
-          <button
-            key={idx}
-            className="word-chip"
-            disabled={locked || picked.includes(idx)}
-            onClick={() => setPicked([...picked, idx])}
-          >
+          <button key={idx} className="word-chip" disabled={locked || picked.includes(idx)} onClick={() => setPicked([...picked, idx])}>
             {t}
           </button>
         ))}
@@ -518,7 +600,7 @@ function Build({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { k
           disabled={!picked.length}
           onClick={() => {
             const ok = built.join(" ") === target.join(" ");
-            onAnswer({ correct: ok, answer: ex.de, speak: ex.de });
+            onAnswer({ correct: ok, answer: ex.de, given: built.join(" "), speak: ex.de });
           }}
         >
           Check
@@ -528,17 +610,18 @@ function Build({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { k
   );
 }
 
-function Choice({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { kind: "choice" }> }) {
+function Choice({ ex, locked, reveal, onAnswer }: ViewProps & { ex: Extract<Exercise, { kind: "choice" }> }) {
   return (
     <div className="stack">
-      <p className="prompt-big" style={{ fontSize: "1.5rem" }}>
+      <p className="prompt-big" style={{ fontSize: "1.45rem" }}>
         {ex.q}
       </p>
       <Options
         options={ex.options}
         answer={ex.answer}
         locked={locked}
-        onPick={(o) => onAnswer({ correct: o === ex.answer, answer: ex.answer, message: ex.explain })}
+        reveal={reveal}
+        onPick={(o) => onAnswer({ correct: o === ex.answer, answer: ex.answer, given: o, message: ex.explain })}
       />
     </div>
   );
@@ -565,6 +648,7 @@ function Dictation({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise,
             correct: r.status !== "wrong",
             message: r.message,
             answer: ex.de,
+            given: v,
             translation: ex.en,
           });
         }}
@@ -579,11 +663,11 @@ function Conjugate({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise,
   return (
     <div className="stack">
       <p className="prompt-label">Conjugate the verb</p>
-      <p className="prompt-big">
+      <p className="prompt-big" lang="de">
         {ex.pronoun} <span className="blank">&nbsp;</span>
       </p>
       <p className="muted">
-        <b>{ex.verb.inf}</b> ({ex.verb.en})
+        <b lang="de">{ex.verb.inf}</b> ({ex.verb.en})
       </p>
       <TextAnswer
         locked={locked}
@@ -595,12 +679,42 @@ function Conjugate({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise,
             correct: r.status !== "wrong",
             message: r.message,
             answer: `${pronoun} ${form}`,
+            given: v,
             speak: `${pronoun} ${form}`,
           });
         }}
       />
     </div>
   );
+}
+
+/** A one-line description of a question, for the test review list. */
+export function describeExercise(ex: Exercise): string {
+  switch (ex.kind) {
+    case "mc":
+      return ex.dir === "de-en" ? `What does "${ex.word.de}" mean?` : `"${ex.word.en}" in German`;
+    case "listen":
+      return "Listening: pick what you heard";
+    case "type":
+      return `Write in German: ${ex.word.en}`;
+    case "typeEn":
+      return `Write in English: ${ex.word.de}`;
+    case "gender":
+      return `der, die or das: ${ex.word.de.split(" ").slice(1).join(" ")}`;
+    case "match":
+      return "Match the pairs";
+    case "fill":
+    case "fillType":
+      return ex.de;
+    case "build":
+      return `Build: ${ex.en}`;
+    case "choice":
+      return ex.q;
+    case "dictation":
+      return "Dictation: type what you hear";
+    case "conj":
+      return `${ex.pronoun} + ${ex.verb.inf}`;
+  }
 }
 
 export { GermanWord };
