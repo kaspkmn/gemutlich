@@ -7,6 +7,8 @@ import { FIX_TARGET, SKILLS, mistakeKey, pickMistakes, skillOf, skillLabel, type
 import ExerciseRunner, { describeExercise, type RunResult } from "@/components/ExerciseRunner";
 import SubNav from "@/components/SubNav";
 import { IconTrash } from "@/components/Icons";
+import WhyBox from "@/components/WhyBox";
+import { explain } from "@/lib/explain";
 
 export default function MistakesPage() {
   const { state, removeMistake } = useStore();
@@ -99,9 +101,19 @@ export default function MistakesPage() {
               <li key={e.key} className="word-item" style={{ alignItems: "flex-start" }}>
                 <div className="grow stack tight">
                   <p className="small muted">{describeExercise(e.ex)}</p>
+                  {e.given && (
+                    <p className="small">
+                      <span className="faint">You last answered: </span>
+                      <span className="review-given" lang="de">
+                        {e.given}
+                      </span>
+                    </p>
+                  )}
                   <p lang="de" style={{ fontWeight: 500 }}>
+                    {e.given && <span className="faint small" style={{ fontWeight: 400 }}>Answer: </span>}
                     {exerciseAnswer(e.ex)}
                   </p>
+                  <MistakeWhy ex={e.ex} given={e.given} />
                   <div className="row wrap" style={{ gap: 8 }}>
                     <span className="pill">{skillLabel(skillOf(e.ex))}</span>
                     <span className="tiny faint">
@@ -132,5 +144,16 @@ export default function MistakesPage() {
         </p>
       )}
     </div>
+  );
+}
+
+function MistakeWhy({ ex, given }: { ex: Exercise; given?: string }) {
+  const why = explain(ex, given);
+  if (!why || !(why.points.length || why.letters || why.words || why.table)) return null;
+  return (
+    <details className="why-details">
+      <summary>Why?</summary>
+      <WhyBox why={why} title={given ? "Why it's wrong" : "Why"} />
+    </details>
   );
 }

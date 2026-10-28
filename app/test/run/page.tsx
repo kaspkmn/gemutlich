@@ -61,7 +61,7 @@ function RunTest() {
       const prev = bestTest(state, spec.id);
       const newBest = spec.id !== "custom" && prev !== undefined && total > 0 && correct / total > prev;
       logTest({ id: spec.id, title: spec.subtitle ? `${spec.title}: ${spec.subtitle}` : spec.title, correct, total, seconds }, xp);
-      recordAnswers(answers.map((a) => ({ ex: a.ex, correct: a.correct })));
+      recordAnswers(answers.map((a) => ({ ex: a.ex, correct: a.correct, given: a.given })));
       setPhase({ t: "results", answers, seconds, xp, newBest });
     },
     [spec, state, logTest, recordAnswers]

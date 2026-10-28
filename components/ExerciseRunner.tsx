@@ -9,6 +9,8 @@ import SpeakButton, { useSpeak } from "./SpeakButton";
 import UmlautKeys from "./UmlautKeys";
 import { GermanWord } from "./GenderTag";
 import { IconX } from "./Icons";
+import WhyBox from "./WhyBox";
+import { explain, explainCorrect } from "@/lib/explain";
 
 export interface RunResult {
   correct: number;
@@ -47,6 +49,7 @@ export default function ExerciseRunner({
   const [i, setI] = useState(0);
   const [fb, setFb] = useState<Answer | null>(null);
   const [praise, setPraise] = useState(PRAISE[0]);
+  const [showWhy, setShowWhy] = useState(false);
   const retried = useRef(new Set<string>());
   const tally = useRef({ correct: 0, xp: 0 });
   const total = exercises.length;
@@ -62,7 +65,7 @@ export default function ExerciseRunner({
       const xp = a.correct ? (isRetry ? 2 : 5) : 0;
       if (a.correct && !isRetry) tally.current.correct += 1;
       tally.current.xp += xp;
-      recordExercise(a.correct, xp, ex);
+      recordExercise(a.correct, xp, ex, a.given);
       if (!a.correct && !retried.current.has(ex.id) && !isRetry) {
         retried.current.add(ex.id);
         setQueue((q) => [...q, { ...ex, id: `${ex.id}~r` } as Exercise]);
@@ -74,6 +77,7 @@ export default function ExerciseRunner({
 
   const next = useCallback(() => {
     setFb(null);
+    setShowWhy(false);
     if (i + 1 >= queue.length) {
       onDone({ correct: tally.current.correct, total, xp: tally.current.xp });
     } else {
@@ -98,6 +102,8 @@ export default function ExerciseRunner({
   }, [fb, next]);
 
   if (!ex) return null;
+  const whyRaw = fb ? (fb.correct ? explainCorrect(ex) : explain(ex, fb.given)) : null;
+  const why = whyRaw && (whyRaw.points.length || whyRaw.letters || whyRaw.words || whyRaw.table) ? whyRaw : null;
   const pct = Math.min(100, (Math.min(i, total) / total) * 100);
 
   return (
@@ -121,7 +127,7 @@ export default function ExerciseRunner({
             <span className="verdict">{fb.correct ? praise : fb.almost ? "Fast! (Almost!)" : "Nicht ganz. (Not quite.)"}</span>
             {fb.speak && <SpeakButton text={fb.speak} />}
           </div>
-          {fb.message && <p>{fb.message}</p>}
+          {fb.message && (fb.correct || !why) && <p>{fb.message}</p>}
           {fb.answer && (!fb.correct || fb.message) && (
             <p>
               <span className="muted">Answer: </span>
@@ -129,6 +135,12 @@ export default function ExerciseRunner({
             </p>
           )}
           {fb.translation && <p className="muted small">{fb.translation}</p>}
+          {why && (!fb.correct || showWhy) && <WhyBox why={why} title={fb.correct ? "Why" : "Why it's wrong"} />}
+          {why && fb.correct && !showWhy && (
+            <button className="link-btn" onClick={() => setShowWhy(true)}>
+              Why is this right?
+            </button>
+          )}
           <button className="btn block" onClick={next} autoFocus>
             Continue
           </button>
@@ -621,7 +633,7 @@ function Choice({ ex, locked, reveal, onAnswer }: ViewProps & { ex: Extract<Exer
         answer={ex.answer}
         locked={locked}
         reveal={reveal}
-        onPick={(o) => onAnswer({ correct: o === ex.answer, answer: ex.answer, given: o, message: ex.explain })}
+        onPick={(o) => onAnswer({ correct: o === ex.answer, answer: ex.answer, given: o })}
       />
     </div>
   );

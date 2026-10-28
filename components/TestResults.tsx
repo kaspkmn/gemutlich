@@ -8,6 +8,8 @@ import { PASS_MARK } from "@/lib/level";
 import { describeExercise } from "./ExerciseRunner";
 import { formatTime, type TestAnswer } from "./TestRunner";
 import { IconCheck, IconX } from "./Icons";
+import WhyBox from "./WhyBox";
+import { explain, explainCorrect } from "@/lib/explain";
 
 export default function TestResults({
   title,
@@ -132,6 +134,7 @@ export default function TestResults({
                     <b style={{ fontWeight: 600 }}>{a.answer || a.given}</b>
                   </p>
                   {a.translation && <p className="tiny faint">{a.translation}</p>}
+                  <ReviewWhy a={a} />
                 </div>
               </li>
             ))}
@@ -139,5 +142,16 @@ export default function TestResults({
         )}
       </section>
     </div>
+  );
+}
+
+function ReviewWhy({ a }: { a: TestAnswer }) {
+  const why = a.correct ? explainCorrect(a.ex) : explain(a.ex, a.given);
+  if (!why || !(why.points.length || why.letters || why.words || why.table)) return null;
+  return (
+    <details className="why-details" open={!a.correct}>
+      <summary>{a.correct ? "Why is this right?" : "Why it's wrong"}</summary>
+      <WhyBox why={why} title={a.correct ? "Why" : "Why it's wrong"} />
+    </details>
   );
 }

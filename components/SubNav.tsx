@@ -9,6 +9,7 @@ const GROUPS = {
     { href: "/read", label: "Stories" },
     { href: "/listen", label: "Listening" },
     { href: "/grammar", label: "Grammar" },
+    { href: "/genders", label: "Genders" },
   ],
   practice: [
     { href: "/practice", label: "Drills" },

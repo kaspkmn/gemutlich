@@ -20,9 +20,9 @@ interface Store {
   sync: SyncStatus;
   addXp: (n: number) => void;
   /** practice answer: XP, stats, skill, and the mistake notebook */
-  recordExercise: (correct: boolean, xp: number, ex?: Exercise) => void;
+  recordExercise: (correct: boolean, xp: number, ex?: Exercise, given?: string) => void;
   /** many answers at once (end of a test) */
-  recordAnswers: (items: { ex: Exercise; correct: boolean }[]) => void;
+  recordAnswers: (items: { ex: Exercise; correct: boolean; given?: string }[]) => void;
   /** a drill without an Exercise object (numbers, speaking) */
   recordSkill: (skill: Skill, correct: boolean, xp: number) => void;
   removeMistake: (key: string) => void;
@@ -184,14 +184,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       ready,
       sync,
       addXp: (n) => update((s) => withXp(s, n)),
-      recordExercise: (correct, xp, ex) =>
+      recordExercise: (correct, xp, ex, given) =>
         update((s) => {
           let next: AppState = {
             ...s,
             stats: { ...s.stats, exercises: s.stats.exercises + 1, correct: s.stats.correct + (correct ? 1 : 0) },
           };
           if (ex) {
-            const t = applyAnswer({ mistakes: s.mistakes, skills: s.skills, mastered: s.stats.mastered }, ex, correct);
+            const t = applyAnswer({ mistakes: s.mistakes, skills: s.skills, mastered: s.stats.mastered }, ex, correct, given);
             next = { ...next, mistakes: t.mistakes, skills: t.skills, stats: { ...next.stats, mastered: t.mastered } };
           }
           return withXp(next, xp);
@@ -199,7 +199,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       recordAnswers: (items) =>
         update((s) => {
           let t = { mistakes: s.mistakes, skills: s.skills, mastered: s.stats.mastered };
-          for (const { ex, correct } of items) t = applyAnswer(t, ex, correct);
+          for (const { ex, correct, given } of items) t = applyAnswer(t, ex, correct, given);
           return { ...s, mistakes: t.mistakes, skills: t.skills, stats: { ...s.stats, mastered: t.mastered } };
         }),
       recordSkill: (skill, correct, xp) =>

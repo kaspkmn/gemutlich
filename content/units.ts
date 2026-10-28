@@ -938,7 +938,7 @@ export const UNITS: Unit[] = [
       { t: "fill", de: "___ wohnst du?", en: "Where do you live?", answer: "Wo", options: ["Wo", "Wer", "Woher", "Wann"] },
       { t: "fill", de: "___ kommst du?", en: "Where are you from?", answer: "Woher", options: ["Woher", "Wohin", "Wo", "Wer"] },
       { t: "fill", de: "___ heißt du?", en: "What's your name?", answer: "Wie", options: ["Wie", "Wer", "Was", "Wo"] },
-      { t: "fill", de: "___ kostet das?", en: "How much does that cost?", answer: "Wie viel", options: ["Wie viel", "Was", "Wie", "Wann"] },
+      { t: "fill", de: "___ kostet das?", en: "How much does that cost?", answer: "Wie viel", options: ["Wie viel", "Wo", "Wie", "Wann"] },
       { t: "fill", de: "___ gehst du?", en: "Where are you going?", answer: "Wohin", options: ["Wohin", "Woher", "Wo", "Wer"] },
       { t: "choice", q: "\"Wer ist das?\" means...", answer: "Who is that?", options: ["Who is that?", "Where is that?", "What is that?", "How is that?"] },
       { t: "build", de: "Wann kommst du nach Hause?", en: "When are you coming home?" },

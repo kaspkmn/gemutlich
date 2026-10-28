@@ -15,6 +15,8 @@ The Write tab gets its feedback by opening claude.ai with your writing and tutor
 - **Stories**: 10 short stories at your level. Tap any word for its meaning and add it to your flashcards. A new one opens as you finish lessons.
 - **Listening**: 8 short conversations read aloud by two voices, with a slow mode, a transcript and questions.
 - **Grammar**: every table from the lessons in one searchable page.
+- **Genders**: a guide to der, die and das: the endings and meanings that predict gender, how compounds work, a checker for any noun, and which of your nouns are exceptions.
+- **Why it's wrong**: every wrong answer comes with the reason. Each lesson question has a written explanation, and the site also looks at what you actually answered (wrong gender, a missing umlaut, the du form instead of the er form, the verb in the wrong place) and explains that. Also in test results and the mistake notebook.
 - **Flashcards**: spaced repetition. Lesson words go in automatically, plus anything you add yourself.
 - **Mistake notebook**: everything you get wrong anywhere is saved. Get it right 3 times in a row and it's cleared.
 - **Weak spots**: your recent accuracy in 9 areas (genders, verb forms, cases, listening...) with practice for each.
@@ -75,6 +77,8 @@ Without Supabase settings, local progress is saved to `.data/progress.json` so y
 - `content/units.ts` and `content/units2.ts`: every lesson, word, grammar note and drill.
 - `content/stories.ts` and `content/dialogues.ts`: the reading stories and listening conversations.
 - `content/verbs.ts`: verb conjugations used by the verb-endings practice.
+- `content/why.ts`: the written reason behind every lesson question.
+- `lib/explain.ts` and `lib/gender-rules.ts`: the rules that explain mistakes and noun genders.
 - `content/course.ts`: chat scenarios for the Write section.
 - `lib/ai.ts`: the instructions Claude follows when grading and chatting.
 - `app/globals.css`: colors and styles. Gender colors are `--der`, `--die`, `--das` and `--pl`.

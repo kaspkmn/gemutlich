@@ -136,6 +136,11 @@ export default function UnitPage() {
       {step === "notes" && (
         <>
           <Notes notes={unit.notes} />
+          {unit.id === "articles" && (
+            <Link href="/genders" className="why-link">
+              Full guide: how to tell if a noun is der, die or das →
+            </Link>
+          )}
           <button className="btn block" onClick={() => setStep("practice")}>
             On to practice
           </button>

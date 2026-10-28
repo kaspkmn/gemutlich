@@ -82,6 +82,8 @@ export interface MistakeEntry {
   fixed: number;
   first: number;
   last: number;
+  /** what was answered the last time it was missed */
+  given?: string;
 }
 
 export interface SkillStat {
@@ -139,7 +141,7 @@ export function bumpSkill(skills: Record<string, SkillStat>, skill: Skill, corre
 }
 
 /** Record one answer: update the skill, and add to or work down the notebook. */
-export function applyAnswer(t: Tracked, ex: Exercise, correct: boolean): Tracked {
+export function applyAnswer(t: Tracked, ex: Exercise, correct: boolean, given?: string): Tracked {
   const skills = bumpSkill(t.skills, skillOf(ex), correct);
   const key = mistakeKey(ex);
   if (!key) return { ...t, skills };
@@ -160,8 +162,8 @@ export function applyAnswer(t: Tracked, ex: Exercise, correct: boolean): Tracked
     // store without the generated id
     const stored = { ...ex, id: "" } as Exercise;
     mistakes[key] = entry
-      ? { ...entry, ex: stored, misses: entry.misses + 1, fixed: 0, last: now }
-      : { ex: stored, misses: 1, fixed: 0, first: now, last: now };
+      ? { ...entry, ex: stored, misses: entry.misses + 1, fixed: 0, last: now, given: given?.slice(0, 200) }
+      : { ex: stored, misses: 1, fixed: 0, first: now, last: now, given: given?.slice(0, 200) };
     const keys = Object.keys(mistakes);
     if (keys.length > MAX_ENTRIES) {
       keys.sort((a, b) => mistakes[a].last - mistakes[b].last);

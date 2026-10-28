@@ -10,6 +10,10 @@ export interface Verb {
 }
 
 /** Regular verb: stem + endings, with the usual spelling tweaks. */
+export function regularForms(inf: string): Verb["forms"] {
+  return reg(inf);
+}
+
 function reg(inf: string): Verb["forms"] {
   const stem = inf.replace(/e?n$/, "");
   const needsE = /[td]$/.test(stem); // arbeiten → arbeitest
