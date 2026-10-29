@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
@@ -12,11 +13,11 @@ import SubNav from "@/components/SubNav";
 import { IconAlert, IconBars, IconCards, IconHash, IconMic } from "@/components/Icons";
 
 const MODES: { id: PracticeMode; title: string; blurb: string; needs: "words" | "units" }[] = [
-  { id: "type", title: "Type it", blurb: "See English, type the German. Some go the other way.", needs: "words" },
+  { id: "type", title: "Type it", blurb: `See English, type the ${L.name}. Some go the other way.`, needs: "words" },
   { id: "dictation", title: "Dictation", blurb: "Hear a word or sentence, type exactly what you heard.", needs: "units" },
   { id: "conj", title: "Verb endings", blurb: "Type the right form: du ___ (sprechen).", needs: "units" },
   { id: "sentences", title: "Sentences", blurb: "Fill gaps and put words in order, from your lessons.", needs: "units" },
-  { id: "gender", title: "der, die, das", blurb: "Quick-fire genders for your nouns.", needs: "words" },
+  { id: "gender", title: L.genderOptions.join(", "), blurb: "Quick-fire genders for your nouns.", needs: "words" },
   { id: "listen", title: "Listening", blurb: "Hear a word, pick what you heard.", needs: "words" },
   { id: "mixed", title: "Quick mix", blurb: "A bit of everything.", needs: "words" },
   { id: "weak", title: "Tricky words", blurb: "Flashcards you've missed the most.", needs: "words" },

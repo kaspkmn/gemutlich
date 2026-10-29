@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { Fragment } from "react";
 import { UNITS } from "@/content/course";
@@ -47,7 +48,7 @@ export default function LearnPage() {
                       {u.title}
                       <span className="next-tag">Next</span>
                     </h3>
-                    <span className="de" lang="de">
+                    <span className="de" lang={L.code}>
                       {u.titleDe}
                     </span>
                     <p className="small muted" style={{ marginTop: 4 }}>

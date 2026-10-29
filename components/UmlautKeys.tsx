@@ -1,6 +1,8 @@
 "use client";
 
-const KEYS = ["ä", "ö", "ü", "ß", "Ä", "Ö", "Ü"];
+import { IS_ES, L } from "@/lib/lang";
+
+const KEYS = IS_ES ? L.keys : [...L.keys, "Ä", "Ö", "Ü"];
 
 /** Inserts special characters at the cursor of the referenced input. */
 export default function UmlautKeys({

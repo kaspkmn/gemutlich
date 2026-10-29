@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ALL_SENTENCES, UNITS } from "@/content/course";
@@ -129,7 +130,7 @@ export default function TranslatePage() {
       )}
 
       <section className="panel stack">
-        <p className="prompt-label">Write this in German</p>
+        <p className="prompt-label">Write this in {L.name}</p>
         <p className="prompt-big">{loadingItem ? "..." : item?.en ?? ""}</p>
         {item && !answered && (
           <div>
@@ -157,16 +158,16 @@ export default function TranslatePage() {
       {local && item && (
         <section className="panel stack">
           <span className={`verdict-pill ${local === "match" ? "good" : "almost"}`}>
-            {local === "match" ? "Richtig! Matches the lesson's answer" : "Different from the lesson's answer"}
+            {local === "match" ? `${L.praise[0]} Matches the lesson's answer` : "Different from the lesson's answer"}
           </span>
           <div className="stack tight">
             <p className="small faint">You wrote</p>
-            <p lang="de">{text}</p>
+            <p lang={L.code}>{text}</p>
           </div>
           <div className="stack tight">
             <p className="small faint">Lesson's answer</p>
             <div className="row">
-              <p className="grow" lang="de" style={{ fontSize: "1.15rem", fontWeight: 500 }}>
+              <p className="grow" lang={L.code} style={{ fontSize: "1.15rem", fontWeight: 500 }}>
                 {item.de}
               </p>
               <SpeakButton text={item.de} />
@@ -175,7 +176,7 @@ export default function TranslatePage() {
           {local === "different" && (
             <>
               <p className="small muted">
-                Yours might still be right, since German often has more than one way to say something. Claude can tell you for sure and
+                Yours might still be right, since {L.name} often has more than one way to say something. Claude can tell you for sure and
                 explain any mistakes.
               </p>
               <ClaudeHandoff

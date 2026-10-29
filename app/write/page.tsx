@@ -1,5 +1,6 @@
 "use client";
 
+import { L, IS_ES } from "@/lib/lang";
 import Link from "next/link";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
@@ -10,26 +11,26 @@ const MODES = [
   {
     href: "/write/translate",
     title: "Translate",
-    de: "Übersetzen",
-    blurb: "Turn an English sentence into German. Any correct version counts, not just one answer.",
+    de: IS_ES ? "Traducir" : "Übersetzen",
+    blurb: `Turn an English sentence into ${L.name}. Any correct version counts, not just one answer.`,
   },
   {
     href: "/write/answer",
     title: "Answer a question",
-    de: "Antworten",
+    de: IS_ES ? "Responder" : "Antworten",
     blurb: "Answer simple questions about your life in your own words.",
   },
   {
     href: "/write/journal",
     title: "Journal",
-    de: "Tagebuch",
+    de: IS_ES ? "Diario" : "Tagebuch",
     blurb: "Write a few sentences about your day and get them corrected.",
   },
   {
     href: "/write/chat",
     title: "Chat",
-    de: "Unterhaltung",
-    blurb: "Have a real conversation at a café, a bakery, or anywhere. Mistakes get fixed as you go.",
+    de: IS_ES ? "Conversación" : "Unterhaltung",
+    blurb: `Have a real conversation at a café, ${IS_ES ? "a taco stand" : "a bakery"}, or anywhere. Mistakes get fixed as you go.`,
   },
 ];
 
@@ -44,9 +45,9 @@ export default function WriteHub() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1>Write in German</h1>
+        <h1>Write in {L.name}</h1>
         <p className="sub">
-          Writing German from scratch is where it really sticks. Translate, answer questions, keep a journal or chat, and get
+          Writing {L.name} from scratch is where it really sticks. Translate, answer questions, keep a journal or chat, and get
           each mistake explained.
         </p>
       </div>
@@ -83,15 +84,15 @@ export default function WriteHub() {
                   {h.prompt && <p className="small muted">{h.prompt}</p>}
                   {h.text.trim() !== h.corrected.trim() ? (
                     <>
-                      <p className="small" lang="de">
+                      <p className="small" lang={L.code}>
                         <s style={{ color: "var(--bad)" }}>{h.text}</s>
                       </p>
-                      <p lang="de">
+                      <p lang={L.code}>
                         <b>{h.corrected}</b>
                       </p>
                     </>
                   ) : (
-                    <p lang="de">
+                    <p lang={L.code}>
                       <b>{h.text}</b>
                     </p>
                   )}

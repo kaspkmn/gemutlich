@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import { useState } from "react";
 import type { AiWord, GradeResult } from "@/lib/ai-client";
 import { VERDICT_LABEL } from "@/lib/ai-client";
@@ -20,7 +21,7 @@ export function NewWords({ words }: { words: AiWord[] }) {
             <div key={w.de} className="row">
               <span className={`gender g-${w.gender === "none" ? "" : w.gender}`} aria-hidden />
               <span className="grow">
-                <b lang="de">{w.de}</b> <span className="muted">{w.en}</span>
+                <b lang={L.code}>{w.de}</b> <span className="muted">{w.en}</span>
               </span>
               <SpeakButton text={w.de} />
               <button
@@ -56,12 +57,12 @@ export default function Correction({ text, result }: { text: string; result: Gra
       {!same && (
         <div className="stack tight">
           <p className="small muted">You wrote</p>
-          <p lang="de" style={{ color: "var(--ink-2)" }}>
+          <p lang={L.code} style={{ color: "var(--ink-2)" }}>
             {text}
           </p>
           <p className="small muted">Corrected</p>
           <div className="row">
-            <p className="line grow" lang="de">
+            <p className="line grow" lang={L.code}>
               {result.corrected}
             </p>
             <SpeakButton text={result.corrected} />
@@ -73,7 +74,7 @@ export default function Correction({ text, result }: { text: string; result: Gra
         <div className="stack tight">
           <p className="small muted">How a native speaker might say it</p>
           <div className="row">
-            <p className="line grow" lang="de">
+            <p className="line grow" lang={L.code}>
               {result.natural}
             </p>
             <SpeakButton text={result.natural} />
@@ -83,7 +84,7 @@ export default function Correction({ text, result }: { text: string; result: Gra
 
       {same && (
         <div className="row">
-          <p className="line grow" lang="de">
+          <p className="line grow" lang={L.code}>
             {result.corrected}
           </p>
           <SpeakButton text={result.corrected} />

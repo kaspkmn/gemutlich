@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
@@ -124,7 +125,7 @@ export default function TestResults({
                   {!a.correct && (
                     <p>
                       <span className="faint">You: </span>
-                      <span className="review-given" lang="de">
+                      <span className="review-given" lang={L.code}>
                         {a.given || "skipped"}
                       </span>
                     </p>

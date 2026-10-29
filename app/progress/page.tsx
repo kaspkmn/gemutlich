@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { useMemo } from "react";
 import { useStore } from "@/lib/store";
@@ -47,7 +48,7 @@ export default function ProgressPage() {
     { v: state.stats.mastered, l: "mistakes cleared" },
     { v: Object.keys(state.read).length, l: "stories & conversations" },
     { v: state.stats.spoken, l: "things said out loud" },
-    { v: state.stats.written, l: "things written in German" },
+    { v: state.stats.written, l: `things written in ${L.name}` },
     { v: state.stats.reviews, l: "flashcard reviews" },
   ];
 

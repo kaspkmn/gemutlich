@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { SCENARIOS, type ChatScenario } from "@/content/course";
@@ -54,7 +55,7 @@ export default function ChatPage() {
         <p className="sub">
           {enabled
             ? "Pick a situation and talk. Replies stay simple, you can play any message, and your mistakes get fixed right under what you wrote."
-            : "Pick a situation and the conversation opens in claude.ai, set up as a German role-play at your level. It replies in simple German with translations and fixes your mistakes as you go."}
+            : `Pick a situation and the conversation opens in claude.ai, set up as a ${L.name} role-play at your level. It replies in simple ${L.name} with translations and fixes your mistakes as you go.`}
         </p>
       </div>
       {enabled === false && opened && (
@@ -77,7 +78,7 @@ export default function ChatPage() {
             }}
           >
             <b>{s.title}</b>
-            <span className="de" lang="de">
+            <span className="de" lang={L.code}>
               {s.titleDe}
             </span>
             <span className="small muted">{s.blurb}</span>
@@ -181,7 +182,7 @@ function Conversation({ scenario, onBack, disabled }: { scenario: ChatScenario; 
           m.role === "assistant" ? (
             <div key={i} className="bubble them">
               <div className="row" style={{ alignItems: "flex-start" }}>
-                <p className="grow" lang="de">
+                <p className="grow" lang={L.code}>
                   {m.text}
                 </p>
                 <SpeakButton text={m.text} />
@@ -202,12 +203,12 @@ function Conversation({ scenario, onBack, disabled }: { scenario: ChatScenario; 
           ) : (
             <div key={i} className="stack tight" style={{ alignItems: "flex-end" }}>
               <div className="bubble me">
-                <p lang="de">{m.text}</p>
+                <p lang={L.code}>{m.text}</p>
               </div>
               {m.fix && (
                 <div className="bubble-fix">
                   <p>
-                    <b lang="de">{m.fix.corrected}</b>
+                    <b lang={L.code}>{m.fix.corrected}</b>
                   </p>
                   <p className="small">{m.fix.explanation}</p>
                 </div>
@@ -243,7 +244,7 @@ function Conversation({ scenario, onBack, disabled }: { scenario: ChatScenario; 
           rows={2}
           submitLabel="Send"
           enterToSubmit
-          placeholder="Antworte auf Deutsch... (Reply in German)"
+          placeholder={L.replyHint}
         />
       </div>
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { L, IS_ES } from "@/lib/lang";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
@@ -12,6 +13,11 @@ import GenderTag, { GermanWord } from "@/components/GenderTag";
 import { IconAlert, IconBook, IconExam, IconFlame, IconHeadphones, IconMic, IconRead } from "@/components/Icons";
 
 function greeting(h: number) {
+  if (IS_ES) {
+    if (h < 12) return { de: "Buenos días", en: "Good morning" };
+    if (h < 19) return { de: "Buenas tardes", en: "Good afternoon" };
+    return { de: "Buenas noches", en: "Good evening" };
+  }
   if (h < 11) return { de: "Guten Morgen", en: "Good morning" };
   if (h < 18) return { de: "Guten Tag", en: "Good afternoon" };
   if (h < 22) return { de: "Guten Abend", en: "Good evening" };
@@ -69,7 +75,7 @@ export default function Home() {
             <h2>{doneCount === 0 ? "Start here" : "Next up"}</h2>
             <p className="small muted">
               {doneCount === 0
-                ? "Your first lesson covers how German sounds. About 10 minutes."
+                ? `Your first lesson covers how ${L.name} sounds. About 10 minutes.`
                 : "Nothing to review right now. Keep going with the course."}
             </p>
           </div>
@@ -133,7 +139,7 @@ export default function Home() {
         <div className={`tile g-${wordOfDay.gender ?? ""}`}>
           <div className="stack">
             <div className="row">
-              <p className="tile-word grow" lang="de">
+              <p className="tile-word grow" lang={L.code}>
                 <GermanWord de={wordOfDay.de} gender={wordOfDay.gender} />
               </p>
               <SpeakButton text={wordOfDay.de} />
@@ -142,7 +148,7 @@ export default function Home() {
             <GenderTag gender={wordOfDay.gender} />
             {wordOfDay.ex && (
               <div className="example">
-                <p className="de" lang="de">
+                <p className="de" lang={L.code}>
                   {wordOfDay.ex[0]}
                 </p>
                 <p className="muted small">{wordOfDay.ex[1]}</p>

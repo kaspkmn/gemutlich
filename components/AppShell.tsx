@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { L, LANG, LANG_INFO, LANGS } from "@/lib/lang";
 import { useStore } from "@/lib/store";
 import { currentStreak, dayKey } from "@/lib/dates";
 import { IconBook, IconChart, IconExam, IconFlame, IconGear, IconHome, IconList, IconPen, IconTarget } from "./Icons";
 
-export const LEARN_PATHS = ["/learn", "/read", "/listen", "/grammar"];
+export const LEARN_PATHS = ["/learn", "/read", "/listen", "/grammar", "/genders"];
 export const PRACTICE_PATHS = ["/practice", "/review", "/mistakes", "/speak", "/numbers", "/weak"];
 
 const NAV = [
@@ -28,7 +29,10 @@ const SYNC_LABEL: Record<string, string> = {
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { state, sync } = useStore();
+  const { state, sync, switchLang } = useStore();
+  const [mounted, setMounted] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const due = useMemo(() => {
     const today = dayKey();
@@ -36,6 +40,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [state.cards]);
   const streak = currentStreak(state.days);
 
+  // The language is only known in the browser, so nothing renders until then.
+  if (!mounted || switching) return <div className="boot" aria-busy="true" />;
   if (pathname === "/login") return <>{children}</>;
 
   const isActive = (match: string[]) =>
@@ -45,12 +51,30 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <div className="shell">
         <header className="topbar">
-          <Link href="/" className="brand" aria-label="Deutsch home">
-            <span className="brand-mark" aria-hidden>
-              D
-            </span>
-            Deutsch
-          </Link>
+          <div className="brand-wrap">
+            <Link href="/" className="brand" aria-label={`${L.native} home`}>
+              <span className="brand-mark" aria-hidden>
+                {L.mark}
+              </span>
+              <span className="brand-name">{L.native}</span>
+            </Link>
+            <div className="lang-switch" role="group" aria-label="Language">
+              {LANGS.map((l) => (
+                <button
+                  key={l}
+                  aria-pressed={l === LANG}
+                  title={LANG_INFO[l].name}
+                  onClick={() => {
+                    if (l === LANG) return;
+                    setSwitching(true);
+                    switchLang(l);
+                  }}
+                >
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="topbar-actions">
             <span className="sync-dot" data-s={sync} title={SYNC_LABEL[sync]} aria-label={SYNC_LABEL[sync]} role="status" />
             <Link href="/progress" className="icon-link" title={`${streak} day streak`}>

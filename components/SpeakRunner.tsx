@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { RECOGNITION_MESSAGES, RecognitionError, listenOnce, recognitionSupported, scoreSpeech, type SpeechScore } from "@/lib/recognize";
@@ -79,7 +80,7 @@ export default function SpeakRunner({
     setError("");
     setResult(null);
     setListening(true);
-    const { result: p, stop } = listenOnce("de-DE");
+    const { result: p, stop } = listenOnce();
     stopRef.current = stop;
     try {
       const heard = await p;
@@ -124,7 +125,7 @@ export default function SpeakRunner({
       <p className="prompt-label">{shadow ? "Listen, then repeat it" : "Say this out loud"}</p>
 
       <div className="stack tight">
-        <p className={`prompt-big${revealed ? "" : " hidden-text"}`} lang="de" aria-hidden={!revealed}>
+        <p className={`prompt-big${revealed ? "" : " hidden-text"}`} lang={L.code} aria-hidden={!revealed}>
           {result ? (
             <span className="heard">
               {result.words.map((w, k) => (
@@ -170,7 +171,7 @@ export default function SpeakRunner({
               <span className="verdict">{passed ? "Sehr gut!" : result.score >= 0.5 ? "Fast! (Almost!)" : "Nochmal? (Again?)"}</span>
               <p className="small">
                 <span className="muted">Heard: </span>
-                <span lang="de">{result.heard || "nothing"}</span>
+                <span lang={L.code}>{result.heard || "nothing"}</span>
               </p>
               {!passed && <p className="small muted">Words in red weren't recognized. Listen again and copy the sounds.</p>}
               <button className="btn block" onClick={next}>

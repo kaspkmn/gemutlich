@@ -1,4 +1,5 @@
 import type { Gender } from "@/content/types";
+import { L } from "@/lib/lang";
 
 export const genderClass = (g?: Gender) => (g ? `g-${g}` : "");
 
@@ -10,7 +11,7 @@ export default function GenderTag({ gender }: { gender?: Gender }) {
 
 /** Render "der Hund" with the article tinted in its gender color. */
 export function GermanWord({ de, gender }: { de: string; gender?: Gender }) {
-  const m = /^(der|die|das) (.+)$/.exec(de);
+  const m = L.articleRe.exec(de);
   if (!gender || !m) return <>{de}</>;
   return (
     <>

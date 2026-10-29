@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { STORIES } from "@/content/stories";
 import { getUnit } from "@/content/course";
@@ -36,7 +37,7 @@ export default function ReadPage() {
               tabIndex={open ? undefined : -1}
             >
               <span className="grow">
-                <b lang="de" style={{ display: "block" }}>
+                <b lang={L.code} style={{ display: "block" }}>
                   {s.title}
                 </b>
                 <span className="small muted">{open ? s.titleEn : `Opens after lesson ${unit.n}: ${unit.title}`}</span>

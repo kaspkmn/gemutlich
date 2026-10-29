@@ -2628,3 +2628,46 @@ input[type="range"] {
   font-size: 1.4rem;
   font-weight: 500;
 }
+
+/* ── language switch ───────────────────────────────────────────────────── */
+.boot {
+  min-height: 100vh;
+  background: var(--bg);
+}
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.lang-switch {
+  display: inline-flex;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 2px;
+  gap: 2px;
+}
+.lang-switch button {
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 4px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.lang-switch button:hover {
+  color: var(--ink);
+}
+.lang-switch button[aria-pressed="true"] {
+  background: var(--red);
+  color: #fff;
+  cursor: default;
+}
+@media (max-width: 420px) {
+  .brand-name {
+    display: none;
+  }
+}

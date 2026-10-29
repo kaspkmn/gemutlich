@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import { useEffect, useRef } from "react";
 import UmlautKeys from "./UmlautKeys";
 
@@ -9,9 +10,9 @@ export default function WritingBox({
   onSubmit,
   busy,
   disabled,
-  placeholder = "Schreib hier... (Write here)",
+  placeholder = L.writeHint,
   rows = 3,
-  submitLabel = "Check my German",
+  submitLabel = `Check my ${L.name}`,
   enterToSubmit = false,
   autoFocus = true,
 }: {
@@ -52,12 +53,12 @@ export default function WritingBox({
           }
         }}
         placeholder={placeholder}
-        lang="de"
+        lang={L.code}
         spellCheck={false}
         autoCorrect="off"
         autoCapitalize="sentences"
         disabled={disabled}
-        aria-label="Your German"
+        aria-label={`Your ${L.name}`}
         style={rows <= 2 ? { minHeight: 0 } : undefined}
       />
       <div className="row between wrap">

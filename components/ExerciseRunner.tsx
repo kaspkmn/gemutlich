@@ -10,6 +10,7 @@ import UmlautKeys from "./UmlautKeys";
 import { GermanWord } from "./GenderTag";
 import { IconX } from "./Icons";
 import WhyBox from "./WhyBox";
+import { L, splitArticle } from "@/lib/lang";
 import { explain, explainCorrect } from "@/lib/explain";
 
 export interface RunResult {
@@ -31,7 +32,7 @@ export interface Answer {
   given?: string;
 }
 
-const PRAISE = ["Richtig!", "Genau!", "Super!", "Sehr gut!", "Prima!", "Toll!"];
+const PRAISE = L.praise;
 
 /** Practice mode: instant feedback, misses come back once at the end. */
 export default function ExerciseRunner({
@@ -124,7 +125,7 @@ export default function ExerciseRunner({
       {fb && (
         <div className={`feedback ${fb.correct ? "good" : fb.almost ? "warn" : "bad"}`} role="status">
           <div className="row between">
-            <span className="verdict">{fb.correct ? praise : fb.almost ? "Fast! (Almost!)" : "Nicht ganz. (Not quite.)"}</span>
+            <span className="verdict">{fb.correct ? praise : fb.almost ? L.almost : L.wrong}</span>
             {fb.speak && <SpeakButton text={fb.speak} />}
           </div>
           {fb.message && (fb.correct || !why) && <p>{fb.message}</p>}
@@ -259,7 +260,7 @@ function MultipleChoice({ ex, locked, reveal, onAnswer }: ViewProps & { ex: Extr
   useAutoSpeak(w.de, ex.dir === "de-en");
   return (
     <div className="stack">
-      <p className="prompt-label">{ex.dir === "de-en" ? "What does this mean?" : "How do you say this in German?"}</p>
+      <p className="prompt-label">{ex.dir === "de-en" ? "What does this mean?" : `How do you say this in ${L.name}?`}</p>
       <div className="row">
         <p className="prompt-big grow" lang={ex.dir === "de-en" ? "de" : undefined}>
           {ex.dir === "de-en" ? w.de : w.en}
@@ -312,7 +313,7 @@ function Listen({ ex, locked, reveal, onAnswer }: ViewProps & { ex: Extract<Exer
 function TextAnswer({
   locked,
   onSubmit,
-  placeholder = "Type in German",
+  placeholder = `Type in ${L.name}`,
   german = true,
 }: {
   locked: boolean;
@@ -363,9 +364,9 @@ function TypeWord({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, 
   const w = ex.word;
   return (
     <div className="stack">
-      <p className="prompt-label">Write this in German</p>
+      <p className="prompt-label">Write this in {L.name}</p>
       <p className="prompt-big">{w.en}</p>
-      {w.type === "noun" && <p className="small faint">Include the article: der, die or das.</p>}
+      {w.type === "noun" && <p className="small faint">Include the article: {L.genderOptions.join(", ").replace(/, ([^,]*)$/, " or $1")}.</p>}
       <TextAnswer
         locked={locked}
         onSubmit={(v) => {
@@ -391,7 +392,7 @@ function TypeEnglish({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercis
     <div className="stack">
       <p className="prompt-label">Write what this means in English</p>
       <div className="row">
-        <p className="prompt-big grow" lang="de">
+        <p className="prompt-big grow" lang={L.code}>
           {w.de}
         </p>
         <SpeakButton text={w.de} />
@@ -421,16 +422,16 @@ function GenderPick({ ex, locked, reveal, onAnswer }: ViewProps & { ex: Extract<
   const bare = rest.join(" ");
   return (
     <div className="stack">
-      <p className="prompt-label">der, die or das?</p>
+      <p className="prompt-label">{L.genderQuestion}</p>
       <div>
-        <p className="prompt-big" lang="de">
+        <p className="prompt-big" lang={L.code}>
           ___ {bare}
         </p>
         <p className="tile-en">{w.en}</p>
       </div>
       <div className="gender-options">
         <Options
-          options={["der", "die", "das"]}
+          options={L.genderOptions}
           answer={article}
           locked={locked}
           reveal={reveal}
@@ -529,7 +530,7 @@ function Fill({ ex, locked, reveal, onAnswer }: ViewProps & { ex: Extract<Exerci
   return (
     <div className="stack">
       <p className="prompt-label">Fill in the blank</p>
-      <p className="sentence" lang="de">
+      <p className="sentence" lang={L.code}>
         {before}
         <span className="blank">{chosen ?? " "}</span>
         {after}
@@ -555,7 +556,7 @@ function FillType({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, 
   return (
     <div className="stack">
       <p className="prompt-label">Type the missing word</p>
-      <p className="sentence" lang="de">
+      <p className="sentence" lang={L.code}>
         {before}
         <span className="blank">&nbsp;</span>
         {after}
@@ -584,7 +585,7 @@ function Build({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise, { k
   const built = picked.map((p) => ex.tiles[p]);
   return (
     <div className="stack">
-      <p className="prompt-label">Build the sentence in German</p>
+      <p className="prompt-label">Build the sentence in {L.name}</p>
       <p className="prompt-big">{ex.en}</p>
       <div className="build-answer" aria-label="Your sentence">
         {picked.map((p, idx) => (
@@ -653,7 +654,7 @@ function Dictation({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise,
       </div>
       <TextAnswer
         locked={locked}
-        placeholder="Type the German you hear"
+        placeholder={`Type the ${L.name} you hear`}
         onSubmit={(v) => {
           const r = checkText(v, [ex.de]);
           onAnswer({
@@ -675,11 +676,11 @@ function Conjugate({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise,
   return (
     <div className="stack">
       <p className="prompt-label">Conjugate the verb</p>
-      <p className="prompt-big" lang="de">
+      <p className="prompt-big" lang={L.code}>
         {ex.pronoun} <span className="blank">&nbsp;</span>
       </p>
       <p className="muted">
-        <b lang="de">{ex.verb.inf}</b> ({ex.verb.en})
+        <b lang={L.code}>{ex.verb.inf}</b> ({ex.verb.en})
       </p>
       <TextAnswer
         locked={locked}
@@ -704,15 +705,15 @@ function Conjugate({ ex, locked, onAnswer }: ViewProps & { ex: Extract<Exercise,
 export function describeExercise(ex: Exercise): string {
   switch (ex.kind) {
     case "mc":
-      return ex.dir === "de-en" ? `What does "${ex.word.de}" mean?` : `"${ex.word.en}" in German`;
+      return ex.dir === "de-en" ? `What does "${ex.word.de}" mean?` : `"${ex.word.en}" in ${L.name}`;
     case "listen":
       return "Listening: pick what you heard";
     case "type":
-      return `Write in German: ${ex.word.en}`;
+      return `Write in ${L.name}: ${ex.word.en}`;
     case "typeEn":
       return `Write in English: ${ex.word.de}`;
     case "gender":
-      return `der, die or das: ${ex.word.de.split(" ").slice(1).join(" ")}`;
+      return `${L.genderQuestion} ${splitArticle(ex.word.de)?.bare ?? ex.word.de}`;
     case "match":
       return "Match the pairs";
     case "fill":

@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
@@ -66,7 +67,7 @@ export default function LoginPage() {
         <span className="brand-mark" aria-hidden>
           D
         </span>
-        <h1>Deutsch</h1>
+        <h1>{L.native}</h1>
         <p className="muted">Enter your PIN</p>
         <div className="pin-dots" aria-label={`${pin.length} of ${LENGTH} digits entered`}>
           {Array.from({ length: LENGTH }, (_, i) => (

@@ -4,9 +4,9 @@ import { StoreProvider } from "@/lib/store";
 import AppShell from "@/components/AppShell";
 
 export const metadata: Metadata = {
-  title: "Deutsch",
-  description: "Your own German course: lessons, stories, speaking, flashcards and tests.",
-  appleWebApp: { capable: true, title: "Deutsch", statusBarStyle: "black-translucent" },
+  title: "Deutsch · Español",
+  description: "Your own German and Spanish courses: lessons, stories, speaking, flashcards and tests.",
+  appleWebApp: { capable: true, title: "Languages", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {

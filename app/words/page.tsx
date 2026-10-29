@@ -1,5 +1,6 @@
 "use client";
 
+import { L, IS_ES } from "@/lib/lang";
 import { useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { ALL_WORDS, getUnit } from "@/content/course";
@@ -57,7 +58,10 @@ export default function WordsPage() {
     const m = en.trim();
     if (!g || !m) return;
     let word = g;
-    if (kind === "noun" && !/^(der|die|das) /i.test(g)) word = `${{ m: "der", f: "die", n: "das", pl: "die" }[gender]} ${g}`;
+    if (kind === "noun" && !L.articleRe.test(g)) {
+      const art = IS_ES && gender === "pl" ? (/as$/i.test(g) ? "las" : "los") : L.articleOf[gender];
+      word = `${art} ${g}`;
+    }
     const ok = addCustomWord({ de: word, en: m, type: kind as WordType, gender: kind === "noun" ? gender : undefined });
     setMsg(ok ? `Added "${word}" to your flashcards.` : `"${word}" is already in your flashcards.`);
     if (ok) {
@@ -79,7 +83,7 @@ export default function WordsPage() {
         <div>
           <h2>Add your own</h2>
           <p className="small muted">
-            German you'll actually use: things about your job, your pets, your routine. Each one becomes a flashcard.
+            {L.name} you'll actually use: things about your job, your pets, your routine. Each one becomes a flashcard.
           </p>
         </div>
         <div className="chips" role="group" aria-label="Kind">
@@ -99,23 +103,29 @@ export default function WordsPage() {
           <input
             ref={deRef}
             className="text-input"
-            placeholder={kind === "noun" ? "German, like Hund" : "German, like Ich habe einen Hund."}
+            placeholder={kind === "noun" ? `${L.name}, like ${L.exampleNoun}` : `${L.name}, like ${L.exampleSentence}`}
             value={de}
             onChange={(e) => setDe(e.target.value)}
-            lang="de"
-            aria-label="German"
+            lang={L.code}
+            aria-label={L.name}
           />
           <input className="text-input" placeholder="English meaning" value={en} onChange={(e) => setEn(e.target.value)} aria-label="English" />
         </div>
         {kind === "noun" && (
           <div className="chips" role="group" aria-label="Gender">
             {(
-              [
-                ["m", "der"],
-                ["f", "die"],
-                ["n", "das"],
-                ["pl", "plural"],
-              ] as const
+              (IS_ES
+                ? [
+                    ["m", "el"],
+                    ["f", "la"],
+                    ["pl", "plural"],
+                  ]
+                : [
+                    ["m", "der"],
+                    ["f", "die"],
+                    ["n", "das"],
+                    ["pl", "plural"],
+                  ]) as [Gender, string][]
             ).map(([g, l]) => (
               <button type="button" key={g} className="chip" aria-pressed={gender === g} onClick={() => setGender(g)}>
                 {l}
@@ -132,7 +142,7 @@ export default function WordsPage() {
         {msg && <p className="small muted">{msg}</p>}
       </form>
 
-      <input className="text-input" type="search" placeholder="Search German or English" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search words" />
+      <input className="text-input" type="search" placeholder={`Search ${L.name} or English`} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search words" />
 
       <div className="chips" role="group" aria-label="Which words">
         <button className="chip" aria-pressed={scope === "deck"} onClick={() => setScope("deck")}>
@@ -162,7 +172,7 @@ export default function WordsPage() {
               <li key={w.id} className="word-item">
                 <span className={`bar g-${w.gender ?? ""}`} />
                 <div className="grow">
-                  <p className="de" lang="de">
+                  <p className="de" lang={L.code}>
                     {w.de}
                   </p>
                   <p className="small muted">

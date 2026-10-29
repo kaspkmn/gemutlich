@@ -1,6 +1,8 @@
-# Deutsch
+# Deutsch · Español
 
-Your own German course, from total beginner toward A2. Next.js on Vercel, with Supabase syncing your progress between your phone and computer.
+Your own German and Spanish courses, from beginner toward A2. Next.js on Vercel, with Supabase syncing your progress between your phone and computer.
+
+Switch languages with the DE / ES buttons at the top, or in Settings. Each language keeps its own lessons, flashcards, tests and mistake notebook. Your streak, XP and daily goal are shared. The Spanish course is Mexican Spanish (ustedes, el carro, Mexican voices).
 
 ## What it costs
 
@@ -11,11 +13,11 @@ The Write tab gets its feedback by opening claude.ai with your writing and tutor
 ## What's inside
 
 - **Today's session**: one button that builds a 10 to 15 minute session from due flashcards, your mistake notebook, your weakest area, and a little speaking.
-- **Lessons**: 24 lessons (about 430 words), from pronunciation to the past tense, the dative, weil/dass and comparing things. Each has words with audio, short grammar notes and about 20 exercises.
+- **Lessons**: 24 lessons per language (about 400 words each). German goes from pronunciation to the past tense, the dative and weil/dass. Spanish goes from pronunciation to ser vs. estar, gustar, stem-changing verbs, the preterite and object pronouns. Each has words with audio, short grammar notes and about 20 exercises.
 - **Stories**: 10 short stories at your level. Tap any word for its meaning and add it to your flashcards. A new one opens as you finish lessons.
 - **Listening**: 8 short conversations read aloud by two voices, with a slow mode, a transcript and questions.
 - **Grammar**: every table from the lessons in one searchable page.
-- **Genders**: a guide to der, die and das: the endings and meanings that predict gender, how compounds work, a checker for any noun, and which of your nouns are exceptions.
+- **Genders**: a guide to der, die and das (or el and la): the endings and meanings that predict gender, how compounds work, a checker for any noun, and which of your nouns are exceptions.
 - **Why it's wrong**: every wrong answer comes with the reason. Each lesson question has a written explanation, and the site also looks at what you actually answered (wrong gender, a missing umlaut, the du form instead of the er form, the verb in the wrong place) and explains that. Also in test results and the mistake notebook.
 - **Flashcards**: spaced repetition. Lesson words go in automatically, plus anything you add yourself.
 - **Mistake notebook**: everything you get wrong anywhere is saved. Get it right 3 times in a row and it's cleared.
@@ -74,7 +76,9 @@ Without Supabase settings, local progress is saved to `.data/progress.json` so y
 
 ## Where things live
 
-- `content/units.ts` and `content/units2.ts`: every lesson, word, grammar note and drill.
+- `content/units.ts` and `content/units2.ts`: every German lesson, word, grammar note and drill.
+- `content/es/`: the Spanish lessons, verbs, stories, conversations and chat scenarios.
+- `lib/lang.ts`: the language switch and everything that differs per language (letters, articles, voices).
 - `content/stories.ts` and `content/dialogues.ts`: the reading stories and listening conversations.
 - `content/verbs.ts`: verb conjugations used by the verb-endings practice.
 - `content/why.ts`: the written reason behind every lesson question.

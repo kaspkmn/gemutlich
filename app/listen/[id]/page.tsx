@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -74,7 +75,7 @@ export default function DialoguePage() {
         <p className="sub">{d.setting}</p>
       </div>
 
-      {!canSpeak && <p className="notice small">This browser can't play German audio. You can still read the transcript.</p>}
+      {!canSpeak && <p className="notice small">This browser can't play {L.name} audio. You can still read the transcript.</p>}
 
       <section className="panel stack">
         <div className="player">
@@ -109,7 +110,7 @@ export default function DialoguePage() {
             <div key={i} className={`dline${l.who === 1 ? " b" : ""}${playing === i ? " now" : ""}`}>
               <span className="who">{d.speakers[l.who]}</span>
               <div className="grow">
-                <p lang="de">{l.de}</p>
+                <p lang={L.code}>{l.de}</p>
                 {showEn && <p className="small faint">{l.en}</p>}
               </div>
               {canSpeak && (

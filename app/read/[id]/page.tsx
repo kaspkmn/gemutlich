@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -83,7 +84,7 @@ export default function StoryPage() {
         <Link href="/read" className="back-link">
           <IconArrowLeft size={15} /> Stories
         </Link>
-        <h1 lang="de">{story.title}</h1>
+        <h1 lang={L.code}>{story.title}</h1>
         <p className="sub">{story.titleEn}</p>
       </div>
 
@@ -103,7 +104,7 @@ export default function StoryPage() {
         </button>
       </div>
 
-      <article className="story-text" lang="de" onClick={(e) => e.target === e.currentTarget && setSel(null)}>
+      <article className="story-text" lang={L.code} onClick={(e) => e.target === e.currentTarget && setSel(null)}>
         {paragraphs.map((para, pi) => (
           <p key={pi}>
             {para.map(([de, en]) => {
@@ -111,21 +112,30 @@ export default function StoryPage() {
               const si = sentenceIndex;
               return (
                 <span key={si} style={playing === si ? { background: "var(--red-tint)", borderRadius: 4 } : undefined}>
-                  {splitWords(de).map((t, ti) => {
-                    if (!t.word) return <span key={ti}>{t.text}</span>;
-                    const key = `${si}-${ti}`;
-                    const hit = lookupWord(t.text, story);
-                    return (
-                      <button
-                        key={ti}
-                        className="tw"
-                        aria-expanded={sel?.key === key}
-                        onClick={() => (hit ? setSel(sel?.key === key ? null : { key, hit }) : setSel(null))}
-                      >
-                        {t.text}
-                      </button>
-                    );
-                  })}{" "}
+                  {/* each space-separated chunk stays together, so quotes and punctuation never wrap away from their word */}
+                  {de.split(/(\s+)/).map((chunk, ci) =>
+                    /^\s+$/.test(chunk) || !chunk ? (
+                      chunk
+                    ) : (
+                      <span key={ci} style={{ whiteSpace: "nowrap" }}>
+                        {splitWords(chunk).map((t, ti) => {
+                          if (!t.word) return <span key={ti}>{t.text}</span>;
+                          const key = `${si}-${ci}-${ti}`;
+                          const hit = lookupWord(t.text, story);
+                          return (
+                            <button
+                              key={ti}
+                              className="tw"
+                              aria-expanded={sel?.key === key}
+                              onClick={() => (hit ? setSel(sel?.key === key ? null : { key, hit }) : setSel(null))}
+                            >
+                              {t.text}
+                            </button>
+                          );
+                        })}
+                      </span>
+                    )
+                  )}{" "}
                   {showEn && (
                     <span className="sentence-en" lang="en">
                       {en}
@@ -141,7 +151,7 @@ export default function StoryPage() {
       {sel && (
         <div className="word-sheet" role="dialog" aria-label={`Meaning of ${sel.hit.word}`}>
           <div className="row between">
-            <span className="w" lang="de">
+            <span className="w" lang={L.code}>
               {sel.hit.word}
             </span>
             <div className="row" style={{ gap: 6 }}>
@@ -154,7 +164,7 @@ export default function StoryPage() {
           <p>{sel.hit.meaning}</p>
           {sel.hit.base !== sel.hit.word && (
             <p className="small faint">
-              Dictionary form: <span lang="de">{sel.hit.base}</span>
+              Dictionary form: <span lang={L.code}>{sel.hit.base}</span>
             </p>
           )}
           <button className="btn small ghost" disabled={inDeck(sel.hit)} onClick={() => save(sel.hit)}>

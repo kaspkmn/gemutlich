@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { diffTokens, type Explanation } from "@/lib/explain";
 import { norm, tokens } from "@/lib/answers";
@@ -17,7 +18,7 @@ export default function WhyBox({ why, title = "Why" }: { why: Explanation; title
       {why.letters && <LetterDiff given={why.letters.given} answer={why.letters.answer} />}
       {why.words && <WordDiff given={why.words.given} answer={why.words.answer} />}
       {why.table && (
-        <table className="why-table" lang="de">
+        <table className="why-table" lang={L.code}>
           <caption>{why.table.title}</caption>
           <tbody>
             {why.table.rows.map(([p, f], i) => (
@@ -44,7 +45,7 @@ function LetterDiff({ given, answer }: { given: string; answer: string }) {
   let ai = 0;
   const answerChars = [...answer];
   return (
-    <div className="diff" lang="de">
+    <div className="diff" lang={L.code}>
       <div>
         <span className="diff-label">You</span>
         <span>
@@ -79,7 +80,7 @@ function LetterDiff({ given, answer }: { given: string; answer: string }) {
 function WordDiff({ given, answer }: { given: string; answer: string }) {
   const ops = diffTokens(tokens(given), tokens(answer), (a, b) => norm(a) === norm(b));
   return (
-    <div className="diff" lang="de">
+    <div className="diff" lang={L.code}>
       <div>
         <span className="diff-label">You</span>
         <span className="diff-words">

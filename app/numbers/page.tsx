@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { NUMBER_MODES, checkNumber, makeNumberItem, type NumberItem, type NumberMode } from "@/lib/numbers";
@@ -100,7 +101,7 @@ export default function NumbersPage() {
               </button>
             </div>
           ) : (
-            <p className="number-said" lang="de">
+            <p className="number-said" lang={L.code}>
               {item.de}
             </p>
           )}
@@ -130,12 +131,12 @@ export default function NumbersPage() {
               </button>
             ) : (
               <div className={`feedback ${checked ? "good" : "bad"}`} style={{ position: "static" }}>
-                <span className="verdict">{checked ? "Richtig!" : "Nicht ganz."}</span>
+                <span className="verdict">{checked ? L.praise[0] : L.wrong}</span>
                 <p>
                   <span className="muted">Answer: </span>
                   <b>{item.answer}</b>
                 </p>
-                <p className="small muted" lang="de">
+                <p className="small muted" lang={L.code}>
                   {item.de}
                 </p>
                 <button className="btn block" type="submit" autoFocus>
@@ -180,7 +181,7 @@ export default function NumbersPage() {
               </button>
             ))}
           </div>
-          <p className="small faint" lang="de">
+          <p className="small faint">
             Example: {info.example}
           </p>
         </div>
@@ -195,12 +196,7 @@ export default function NumbersPage() {
             </button>
           </div>
         </div>
-        {mode === "time" && (
-          <p className="tip">
-            Everyday times: halb vier is 3:30 (half way to four). Viertel nach drei is 3:15, Viertel vor vier is 3:45. Either 3:30
-            or 15:30 counts.
-          </p>
-        )}
+        {info.tip && <p className="tip">{info.tip}</p>}
         <button className="btn block" onClick={start}>
           Start {ROUND} questions
         </button>

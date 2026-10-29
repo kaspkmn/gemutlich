@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ALL_PROMPTS } from "@/content/course";
@@ -20,7 +21,7 @@ interface Q {
   hint?: string;
 }
 
-const STARTER_UNITS = ["greetings", "intro", "numbers"];
+const STARTER_UNITS = L.starterUnits;
 
 export default function AnswerPage() {
   const { logWriting } = useStore();
@@ -104,14 +105,14 @@ export default function AnswerPage() {
           <IconArrowLeft size={15} /> Write
         </Link>
         <h1>Answer a question</h1>
-        <p className="sub">Answer however you like. Made-up answers are fine; the point is writing the German.</p>
+        <p className="sub">Answer however you like. Made-up answers are fine; the point is writing the {L.name}.</p>
       </div>
 
       {enabled === false && <AiNotice />}
 
       <section className="panel stack">
         <div className="row">
-          <p className="prompt-big grow" lang="de">
+          <p className="prompt-big grow" lang={L.code}>
             {loadingQ ? "..." : q?.de}
           </p>
           {q && <SpeakButton text={q.de} />}
@@ -134,7 +135,7 @@ export default function AnswerPage() {
             onSubmit={check}
             busy={busy}
             disabled={!q || loadingQ || enabled === null}
-            submitLabel={enabled ? "Check my German" : "Get feedback in Claude"}
+            submitLabel={enabled ? `Check my ${L.name}` : "Get feedback in Claude"}
           />
         )}
         {sent && (

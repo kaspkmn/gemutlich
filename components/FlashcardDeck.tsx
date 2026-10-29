@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import { useCallback, useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { findWord } from "@/lib/state";
@@ -121,7 +122,7 @@ export default function FlashcardDeck({
       >
         {item.front === "de" ? (
           <div className="row">
-            <p className="tile-word grow" lang="de">
+            <p className="tile-word grow" lang={L.code}>
               <GermanWord de={word.de} gender={flipped ? word.gender : undefined} />
             </p>
             <SpeakButton text={word.de} />
@@ -137,7 +138,7 @@ export default function FlashcardDeck({
               <p className="tile-en">{word.en}</p>
             ) : (
               <div className="row">
-                <p className="tile-word grow" lang="de" style={{ fontSize: "1.9rem" }}>
+                <p className="tile-word grow" lang={L.code} style={{ fontSize: "1.9rem" }}>
                   <GermanWord de={word.de} gender={word.gender} />
                 </p>
                 <SpeakButton text={word.de} />
@@ -149,7 +150,7 @@ export default function FlashcardDeck({
             </div>
             {word.ex && (
               <div className="example">
-                <p className="de" lang="de">
+                <p className="de" lang={L.code}>
                   {word.ex[0]}
                 </p>
                 <p className="muted small">{word.ex[1]}</p>

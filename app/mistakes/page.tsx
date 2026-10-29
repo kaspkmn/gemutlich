@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { cloneExercise, exerciseAnswer, type Exercise } from "@/lib/exercises";
@@ -104,12 +105,12 @@ export default function MistakesPage() {
                   {e.given && (
                     <p className="small">
                       <span className="faint">You last answered: </span>
-                      <span className="review-given" lang="de">
+                      <span className="review-given" lang={L.code}>
                         {e.given}
                       </span>
                     </p>
                   )}
-                  <p lang="de" style={{ fontWeight: 500 }}>
+                  <p lang={L.code} style={{ fontWeight: 500 }}>
                     {e.given && <span className="faint small" style={{ fontWeight: 400 }}>Answer: </span>}
                     {exerciseAnswer(e.ex)}
                   </p>

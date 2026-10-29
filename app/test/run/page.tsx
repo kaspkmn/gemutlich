@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
@@ -75,7 +76,7 @@ function RunTest() {
         <h1>Test not found</h1>
         <p className="muted">
           {noSound
-            ? "This test only had listening questions, and this browser can't play German audio."
+            ? `This test only had listening questions, and this browser can't play ${L.name} audio.`
             : "This link doesn't match any test."}
         </p>
         <Link href="/test" className="btn">
@@ -162,7 +163,7 @@ function RunTest() {
           <li>Each test is a new random set of questions.</li>
           {spec.timed && <li>The clock runs, but there's no time limit.</li>}
           {spec.types.includes("listening") && <li>Turn your sound on for the listening questions.</li>}
-          {noSound && <li>Listening questions are off because this browser can't play German audio.</li>}
+          {noSound && <li>Listening questions are off because this browser can't play {L.name} audio.</li>}
         </ul>
         <button className="btn block" onClick={start}>
           {attempts ? "Start a new attempt" : "Start test"}

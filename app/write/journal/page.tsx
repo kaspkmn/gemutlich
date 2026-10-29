@@ -1,5 +1,6 @@
 "use client";
 
+import { L, IS_ES } from "@/lib/lang";
 import Link from "next/link";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
@@ -11,7 +12,16 @@ import Correction from "@/components/Correction";
 import AiNotice from "@/components/AiNotice";
 import { IconArrowLeft } from "@/components/Icons";
 
-const TOPICS = [
+const TOPICS = IS_ES
+  ? [
+      { de: "Mi día", en: "My day", starter: "Hoy estoy ..." },
+      { de: "El fin de semana", en: "On the weekend", starter: "El fin de semana ..." },
+      { de: "Lo que como hoy", en: "What I'm eating today", starter: "En el desayuno como ..." },
+      { de: "Mi familia", en: "My family", starter: "Mi familia es ..." },
+      { de: "Mis mascotas", en: "My pets", starter: "Tengo ..." },
+      { de: "Tema libre", en: "Anything you like", starter: "" },
+    ]
+  : [
   { de: "Mein Tag", en: "My day", starter: "Heute bin ich ..." },
   { de: "Am Wochenende", en: "On the weekend", starter: "Am Wochenende ..." },
   { de: "Was ich heute esse", en: "What I'm eating today", starter: "Zum Frühstück esse ich ..." },
@@ -88,7 +98,7 @@ export default function JournalPage() {
 
       <section className="panel stack">
         <div>
-          <h2 lang="de">{topic.de}</h2>
+          <h2 lang={L.code}>{topic.de}</h2>
           <p className="muted small">
             {topic.en}
             {topic.starter ? `. Try starting with "${topic.starter}"` : ""}
@@ -102,11 +112,11 @@ export default function JournalPage() {
             busy={busy}
             rows={6}
             disabled={enabled === null}
-            submitLabel={enabled ? "Check my German" : "Get feedback in Claude"}
-            placeholder={topic.starter || "Schreib hier... (Write here)"}
+            submitLabel={enabled ? `Check my ${L.name}` : "Get feedback in Claude"}
+            placeholder={topic.starter || L.writeHint}
           />
         ) : (
-          <p lang="de" style={{ whiteSpace: "pre-wrap" }}>
+          <p lang={L.code} style={{ whiteSpace: "pre-wrap" }}>
             {text}
           </p>
         )}

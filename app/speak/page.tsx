@@ -1,5 +1,6 @@
 "use client";
 
+import { IS_ES } from "@/lib/lang";
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { findWord } from "@/lib/state";
@@ -12,7 +13,7 @@ import { skillAccuracy } from "@/lib/mistakes";
 
 
 const MODES: { id: Mode; title: string; blurb: string }[] = [
-  { id: "words", title: "Words & phrases", blurb: "From your flashcards. Good for single sounds like ü, ch and r." },
+  { id: "words", title: "Words & phrases", blurb: `From your flashcards. Good for single sounds like ${IS_ES ? "rr, ñ and j" : "ü, ch and r"}.` },
   { id: "sentences", title: "Sentences", blurb: "Whole sentences from your lessons, read and said." },
   { id: "shadow", title: "Shadowing", blurb: "Hear it first with the text hidden, then repeat it. Trains your ear and mouth together." },
 ];

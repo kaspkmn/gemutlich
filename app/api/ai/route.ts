@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
+  const lang = body.lang === "es" ? "es" : "de";
   const units = Array.isArray(body.units) ? (body.units as unknown[]).map(String).slice(0, 50) : [];
 
   try {
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
           reference: body.reference ? String(body.reference) : undefined,
           text,
           units,
+          lang,
         });
         return NextResponse.json(result);
       }
@@ -42,13 +44,13 @@ export async function POST(req: NextRequest) {
               .filter((m) => m && (m.role === "user" || m.role === "assistant"))
               .map((m) => ({ role: m.role as "user" | "assistant", text: String(m.text ?? "") }))
           : [];
-        const result = await chat({ scenarioId: String(body.scenarioId ?? "free"), history, units });
+        const result = await chat({ scenarioId: String(body.scenarioId ?? "free"), history, units, lang });
         return NextResponse.json(result);
       }
       case "generate": {
         const kind = body.kind === "question" ? "question" : "translate";
         const avoid = Array.isArray(body.avoid) ? (body.avoid as unknown[]).map(String) : [];
-        const result = await generate({ kind, units, avoid });
+        const result = await generate({ kind, units, avoid, lang });
         return NextResponse.json(result);
       }
       default:

@@ -1,26 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { ALL_WORDS } from "@/content/course";
-import type { CourseWord, Gender } from "@/content/types";
+import type { CourseWord } from "@/content/types";
 import { useStore } from "@/lib/store";
 import { findWord } from "@/lib/state";
 import { genderable, genderExercise, sample, type Exercise } from "@/lib/exercises";
-import { ARTICLE, GENDER_NAME, RULES, analyzeNoun, guessGender, type GenderRule } from "@/lib/gender-rules";
+import { ARTICLE, EXCEPTIONS, GUIDE, RULES, analyzeNoun, guessGender, type G3, type GenderRule } from "@/lib/gender-rules";
+import { IS_ES, L, bareNoun } from "@/lib/lang";
 import ExerciseRunner, { type RunResult } from "@/components/ExerciseRunner";
 import SubNav from "@/components/SubNav";
 
-type G3 = "m" | "f" | "n";
-
 const NOUNS = ALL_WORDS.filter((w) => w.type === "noun" && w.gender && w.gender !== "pl");
-const bareOf = (de: string) => de.replace(/^(der|die|das) /, "");
 
 /** Course nouns that each rule correctly predicts, for "from your lessons" examples. */
 function courseExamples(): Map<string, CourseWord[]> {
   const m = new Map<string, CourseWord[]>();
   for (const w of NOUNS) {
-    const g = guessGender(bareOf(w.de), w.en);
+    const g = guessGender(bareNoun(w.de), w.en);
     if (!g?.rule || g.gender !== w.gender) continue;
     const list = m.get(g.rule.id) ?? [];
     list.push(w);
@@ -29,45 +27,25 @@ function courseExamples(): Map<string, CourseWord[]> {
   return m;
 }
 
-const SECTIONS: { gender: G3; title: string; intro: string }[] = [
-  {
-    gender: "f",
-    title: "Signs it's die",
-    intro: "Feminine has the most reliable endings. If a noun ends in -ung, -heit, -keit, -schaft or -tät, it's die, no exceptions.",
-  },
-  {
-    gender: "n",
-    title: "Signs it's das",
-    intro: "Neuter is the smallest group. -chen and -lein are always das, and so is any verb turned into a noun.",
-  },
-  {
-    gender: "m",
-    title: "Signs it's der",
-    intro: "Masculine is the most common gender. Days, months, seasons and male people are der, and -er, -el and -en lean der too.",
-  },
-];
+/** "**bold**" → <b> */
+function Rich({ text }: { text: string }) {
+  const parts = text.split(/\*\*(.+?)\*\*/g);
+  return (
+    <>
+      {parts.map((p, i) =>
+        i % 2 ? (
+          <b key={i} lang={L.code}>
+            {p}
+          </b>
+        ) : (
+          <Fragment key={i}>{p}</Fragment>
+        )
+      )}
+    </>
+  );
+}
 
-const SAME_WORD: [string, string, string, string][] = [
-  ["der See", "the lake", "die See", "the sea"],
-  ["der Leiter", "the leader, manager", "die Leiter", "the ladder"],
-  ["das Steuer", "the steering wheel", "die Steuer", "the tax"],
-  ["der Teil", "the part", "das Teil", "the piece, the thing"],
-];
-
-const COMPOUNDS: [string, string, string][] = [
-  ["der Kühlschrank", "fridge", "kühl (cool) + der Schrank (cupboard)"],
-  ["die Haustür", "front door", "das Haus (house) + die Tür (door)"],
-  ["das Wohnzimmer", "living room", "wohnen (to live) + das Zimmer (room)"],
-  ["der Bahnhof", "train station", "die Bahn (railway) + der Hof (yard)"],
-  ["die Bushaltestelle", "bus stop", "der Bus + die Haltestelle (stop)"],
-];
-
-const RELIABILITY_TEXT: Record<string, string> = {
-  always: "always",
-  "almost always": "almost always",
-  usually: "usually",
-  often: "often",
-};
+const genderOfArticle = (de: string): G3 => (/^(die|la|las) /.test(de) ? "f" : /^das /.test(de) ? "n" : "m");
 
 export default function GendersPage() {
   const { state } = useStore();
@@ -100,14 +78,14 @@ export default function GendersPage() {
       else if (a.guess) exceptions.push({ w, why: a.explanation });
       else memorize.push({ w, why: a.explanation });
     }
-    const byDe = (x: { w: CourseWord }, y: { w: CourseWord }) => bareOf(x.w.de).localeCompare(bareOf(y.w.de), "de");
+    const byDe = (x: { w: CourseWord }, y: { w: CourseWord }) => bareNoun(x.w.de).localeCompare(bareNoun(y.w.de), L.code);
     return { follows: follows.sort(byDe), exceptions: exceptions.sort(byDe), memorize: memorize.sort(byDe) };
   }, [pool]);
 
   const check = useMemo(() => checkNoun(q, myNouns), [q, myNouns]);
 
   const startPractice = () => {
-    const src = (myNouns.length >= 5 ? myNouns : NOUNS).filter(genderable);
+    const src = (myNouns.filter(genderable).length >= 5 ? myNouns : NOUNS).filter(genderable);
     const picked = sample(src, Math.min(15, src.length)).map(genderExercise);
     if (picked.length) {
       setResult(null);
@@ -131,15 +109,14 @@ export default function GendersPage() {
     );
   }
 
+  const genders: G3[] = IS_ES ? ["m", "f"] : ["m", "f", "n"];
+
   return (
     <div className="page">
       <SubNav group="learn" />
       <div className="page-head">
         <h1>Noun genders</h1>
-        <p className="sub">
-          Every German noun is der, die or das. For a lot of nouns you just have to learn it, but the ending or meaning often gives it
-          away. These are the patterns that actually work.
-        </p>
+        <p className="sub">{GUIDE.intro}</p>
       </div>
 
       {result && (
@@ -155,43 +132,37 @@ export default function GendersPage() {
       <section className="stack">
         <h2 className="section-title">The basics</h2>
         <div className="gender-trio">
-          {(["m", "f", "n"] as G3[]).map((g) => (
-            <div key={g} className={`gender-card g-${g}`}>
-              <b className="gtext">{ARTICLE[g]}</b>
-              <span>{GENDER_NAME[g]}</span>
-              <span className="tiny faint" lang="de">
-                {g === "m" ? "der Tisch, der Mann" : g === "f" ? "die Lampe, die Frau" : "das Buch, das Kind"}
+          {GUIDE.basics.map((b) => (
+            <div key={b.article + b.label} className={`gender-card g-${b.cls}`}>
+              <b className="gtext" lang={L.code}>
+                {b.article}
+              </b>
+              <span>{b.label}</span>
+              <span className="tiny faint" lang={L.code}>
+                {b.examples}
               </span>
             </div>
           ))}
-          <div className="gender-card g-pl">
-            <b className="gtext">die</b>
-            <span>every plural</span>
-            <span className="tiny faint" lang="de">
-              die Tische, die Bücher
-            </span>
-          </div>
         </div>
         <ul className="plain-list">
+          {GUIDE.bullets.map((b) => (
+            <li key={b}>
+              <Rich text={b} />
+            </li>
+          ))}
           <li>
-            Gender belongs to the <i>word</i>, not the thing. A table isn't male, it's just <b lang="de">der Tisch</b>. And das Mädchen
-            (the girl) is neuter because of its -chen ending.
-          </li>
-          <li>
-            All plurals use <b lang="de">die</b>, whatever the gender. That's one less thing to learn.
-          </li>
-          <li>
-            The article changes with its job in the sentence (der becomes den or dem), but you always start from the gender. Get that
-            right and the rest follows.
-          </li>
-          <li>
-            Learn every noun together with its article, as one unit: not &quot;Tisch&quot; but &quot;der Tisch&quot;. Throughout this
-            site, der is <span className="g-m gtext">blue</span>, die is <span className="g-f gtext">pink</span> and das is{" "}
-            <span className="g-n gtext">green</span>, to help them stick.
+            Throughout this site,{" "}
+            {genders.map((g, i) => (
+              <Fragment key={g}>
+                {i > 0 && (i === genders.length - 1 ? " and " : ", ")}
+                {ARTICLE[g]} is <span className={`g-${g} gtext`}>{{ m: "blue", f: "pink", n: "green" }[g]}</span>
+              </Fragment>
+            ))}
+            , to help them stick.
           </li>
         </ul>
         <button className="btn block" onClick={startPractice}>
-          Practice der, die, das
+          Practice {L.genderOptions.join(", ").replace(/, ([^,]*)$/, IS_ES ? " or $1" : ", $1")}
         </button>
       </section>
 
@@ -200,28 +171,28 @@ export default function GendersPage() {
         <h2 className="section-title" style={{ margin: 0 }}>
           Guess a noun&apos;s gender
         </h2>
-        <p className="small muted">Type any German noun and see which pattern it follows.</p>
+        <p className="small muted">Type any {L.name} noun and see which pattern it follows.</p>
         <input
           className="text-input"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="e.g. Zeitung, Brötchen, Kühlschrank"
+          placeholder={GUIDE.checkerPlaceholder}
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
-          lang="de"
-          aria-label="A German noun"
+          lang={L.code}
+          aria-label={`A ${L.name} noun`}
         />
         {check && (
           <div className={`gender-answer g-${check.gender ?? "x"}`} role="status">
             {check.gender ? (
-              <p className="gender-answer-word" lang="de">
+              <p className="gender-answer-word" lang={L.code}>
                 <span className="gtext">{ARTICLE[check.gender]}</span> {check.bare}
-                <span className="tiny faint"> {check.known ? "from your words" : `best guess, ${check.reliability}`}</span>
+                <span className="tiny faint"> {check.known ? "known word" : `best guess, ${check.reliability}`}</span>
               </p>
             ) : (
-              <p className="gender-answer-word" lang="de">
+              <p className="gender-answer-word" lang={L.code}>
                 ??? {check.bare}
               </p>
             )}
@@ -231,7 +202,7 @@ export default function GendersPage() {
       </section>
 
       {/* ── rules ── */}
-      {SECTIONS.map((s) => (
+      {GUIDE.sections.map((s) => (
         <section key={s.gender} className="stack">
           <h2 className={`section-title g-${s.gender}`}>
             <span className="gtext">{s.title}</span>
@@ -245,39 +216,39 @@ export default function GendersPage() {
         </section>
       ))}
 
-      {/* ── compounds ── */}
-      <section className="stack">
-        <h2 className="section-title">Compound nouns: the last part decides</h2>
-        <p className="small muted">
-          German glues words together. The gender always comes from the last word, so once you know that one, you know them all.
-        </p>
-        <ul className="word-list">
-          {COMPOUNDS.map(([de, en, parts]) => (
-            <li key={de} className="word-item">
-              <span className={`bar g-${genderOf(de)}`} />
-              <div className="grow stack tight">
-                <span className="de" lang="de">
-                  {de} <span className="faint small">({en})</span>
-                </span>
-                <span className="tiny faint">{parts}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {/* ── extra sections: compounds, el agua, people ── */}
+      {GUIDE.extras.map((x) => (
+        <section key={x.title} className="stack">
+          <h2 className="section-title">{x.title}</h2>
+          <p className="small muted">{x.intro}</p>
+          <ul className="word-list">
+            {x.items.map((it) => (
+              <li key={it.de} className="word-item">
+                <span className={`bar g-${it.gender ?? genderOfArticle(it.de)}`} />
+                <div className="grow stack tight">
+                  <span className="de" lang={L.code}>
+                    {it.de} <span className="faint small">({it.en})</span>
+                  </span>
+                  {it.note && <span className="tiny faint">{it.note}</span>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
 
       {/* ── same word, different gender ── */}
       <section className="stack">
         <h2 className="section-title">Same word, different gender</h2>
-        <p className="small muted">A few nouns change meaning with their article. You won&apos;t need these soon, but they show why the article matters.</p>
+        <p className="small muted">{GUIDE.sameWordIntro}</p>
         <ul className="word-list">
-          {SAME_WORD.map(([a, ae, b, be]) => (
+          {GUIDE.sameWord.map(([a, ae, b, be]) => (
             <li key={a} className="word-item">
               <div className="grow stack tight">
-                <span lang="de">
+                <span lang={L.code}>
                   <b style={{ fontWeight: 500 }}>{a}</b> <span className="faint small">{ae}</span>
                 </span>
-                <span lang="de">
+                <span lang={L.code}>
                   <b style={{ fontWeight: 500 }}>{b}</b> <span className="faint small">{be}</span>
                 </span>
               </div>
@@ -312,14 +283,14 @@ export default function GendersPage() {
       </section>
 
       <p className="small faint">
-        <Link href="/learn/articles" className="why-link">
-          Lesson 6: der, die, das
+        <Link href={GUIDE.footer.href} className="why-link">
+          {GUIDE.footer.label}
         </Link>{" "}
         covers articles, and the{" "}
         <Link href="/grammar" className="why-link">
           grammar page
         </Link>{" "}
-        has the full tables for den, dem and the rest.
+        has every table from the lessons.
       </p>
     </div>
   );
@@ -332,9 +303,9 @@ function RuleCard({ r, from }: { r: GenderRule; from: CourseWord[] }) {
     <div className={`rule-card g-${r.gender}`}>
       <div className="row between" style={{ alignItems: "baseline" }}>
         <b className="rule-label">{r.label}</b>
-        <span className={`pill${r.reliability === "always" ? " red" : ""}`}>{RELIABILITY_TEXT[r.reliability]}</span>
+        <span className={`pill${r.reliability === "always" ? " red" : ""}`}>{r.reliability}</span>
       </div>
-      <p className="small" lang="de">
+      <p className="small" lang={L.code}>
         {r.examples.map((e, i) => (
           <span key={e}>
             {i > 0 && ", "}
@@ -346,12 +317,12 @@ function RuleCard({ r, from }: { r: GenderRule; from: CourseWord[] }) {
       {r.exceptions?.length ? (
         <p className="small">
           <span className="faint">Exceptions: </span>
-          <span lang="de">{r.exceptions.join(", ")}</span>
+          <span lang={L.code}>{r.exceptions.join(", ")}</span>
         </p>
       ) : null}
       {extra.length > 0 && (
         <p className="tiny faint">
-          From your lessons: <span lang="de">{extra.map((w) => w.de).join(", ")}</span>
+          From your lessons: <span lang={L.code}>{extra.map((w) => w.de).join(", ")}</span>
         </p>
       )}
     </div>
@@ -371,7 +342,7 @@ function NounGroup({ title, items, open }: { title: string; items: { w: CourseWo
           <li key={w.id} className="word-item" style={{ alignItems: "flex-start" }}>
             <span className={`bar g-${w.gender}`} />
             <div className="grow stack tight">
-              <span className="de" lang="de">
+              <span className="de" lang={L.code}>
                 {w.de} <span className="faint small">({w.en})</span>
               </span>
               <span className="tiny muted">{why}</span>
@@ -381,10 +352,6 @@ function NounGroup({ title, items, open }: { title: string; items: { w: CourseWo
       </ul>
     </details>
   );
-}
-
-function genderOf(de: string): Gender {
-  return de.startsWith("der ") ? "m" : de.startsWith("die ") ? "f" : "n";
 }
 
 interface CheckResult {
@@ -397,23 +364,26 @@ interface CheckResult {
 
 /** Look up a typed noun: a known word first, otherwise a pattern guess. */
 function checkNoun(input: string, mine: CourseWord[]): CheckResult | null {
-  let bare = input.trim().replace(/^(der|die|das)\s+/i, "").replace(/[.,!?]/g, "");
+  let bare = input
+    .trim()
+    .replace(IS_ES ? /^(el|la|los|las)\s+/i : /^(der|die|das)\s+/i, "")
+    .replace(/[.,!?¿¡]/g, "");
   if (bare.length < 2) return null;
-  bare = bare[0].toUpperCase() + bare.slice(1);
+  // German nouns are capitalized, Spanish ones aren't
+  bare = IS_ES ? bare.toLowerCase() : bare[0].toUpperCase() + bare.slice(1);
   const lower = bare.toLowerCase();
-  const known = [...mine, ...NOUNS].find((w) => w.gender && w.gender !== "pl" && bareOf(w.de).toLowerCase() === lower);
+  const known = [...mine, ...NOUNS].find((w) => w.gender && w.gender !== "pl" && bareNoun(w.de).toLowerCase() === lower);
   if (known) {
     const a = analyzeNoun(known);
-    return { bare: bareOf(known.de), gender: known.gender as G3, known: true, reason: a ? a.explanation : "" };
+    return { bare: bareNoun(known.de), gender: known.gender as G3, known: true, reason: a ? a.explanation : "" };
+  }
+  const exc = EXCEPTIONS[lower];
+  if (exc) {
+    const a = analyzeNoun({ de: `${ARTICLE[exc]} ${bare}`, en: "", gender: exc });
+    return { bare, gender: exc, known: true, reason: a ? a.explanation : `${bare} is an exception: ${ARTICLE[exc]} ${bare}.` };
   }
   const g = guessGender(bare);
-  if (!g) {
-    return {
-      bare,
-      known: false,
-      reason:
-        "No pattern fits this one, so there's no reliable way to guess. Look it up and learn it with its article. If you had to bet, der is the most common gender.",
-    };
-  }
-  return { bare, gender: g.gender, known: false, reliability: RELIABILITY_TEXT[g.reliability], reason: g.reason };
+  if (!g) return { bare, known: false, reason: GUIDE.noPattern };
+  return { bare, gender: g.gender, known: false, reliability: g.reliability, reason: g.reason };
 }
+

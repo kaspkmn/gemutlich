@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Deutsch",
-    short_name: "Deutsch",
-    description: "Your own German course.",
+    name: "Deutsch · Español",
+    short_name: "Languages",
+    description: "Your own German and Spanish courses.",
     start_url: "/",
     display: "standalone",
     background_color: "#000000",

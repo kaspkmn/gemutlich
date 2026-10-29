@@ -1,9 +1,10 @@
 "use client";
 
+import { L, LANG, LANGS, LANG_INFO } from "@/lib/lang";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
-import { germanVoices, onVoicesReady, speak, speechSupported } from "@/lib/speech";
+import { langVoices, onVoicesReady, speak, speechSupported } from "@/lib/speech";
 import { hydrate } from "@/lib/state";
 import { dayKey } from "@/lib/dates";
 
@@ -15,7 +16,8 @@ const GOALS = [
 ];
 
 export default function SettingsPage() {
-  const { state, updateSettings, resetAll, replaceState, signOut, sync } = useStore();
+  const { state, updateSettings, resetAll, replaceState, signOut, sync, switchLang } = useStore();
+  const [switching, setSwitching] = useState(false);
   const s = state.settings;
   const router = useRouter();
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -26,14 +28,14 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setSpeechOk(speechSupported());
-    return onVoicesReady(() => setVoices(germanVoices()));
+    return onVoicesReady(() => setVoices(langVoices()));
   }, []);
 
   const exportData = () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `deutsch-backup-${dayKey()}.json`;
+    a.download = `languages-backup-${dayKey()}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -54,6 +56,41 @@ export default function SettingsPage() {
       <div className="page-head">
         <h1>Settings</h1>
       </div>
+
+      <section className="panel stack">
+        <h2>Language</h2>
+        <p className="small muted">
+          Each language keeps its own lessons, flashcards, tests and mistakes. Your streak, XP and daily goal are shared.
+        </p>
+        <div className="stack tight" role="radiogroup" aria-label="Language">
+          {LANGS.map((l) => {
+            const other = state.shelf[l];
+            const done = l === LANG ? Object.values(state.units).filter((u) => u.completed).length : other ? Object.values(other.units).filter((u) => u.completed).length : 0;
+            return (
+              <label key={l} className="toggle" style={{ cursor: "pointer" }}>
+                <span>
+                  <b>
+                    {LANG_INFO[l].name} <span className="muted" style={{ fontWeight: 400 }}>({LANG_INFO[l].native})</span>
+                  </b>
+                  <span className="small muted" style={{ display: "block" }}>
+                    {done ? `${done} ${done === 1 ? "lesson" : "lessons"} done` : "Not started yet"}
+                  </span>
+                </span>
+                <input
+                  type="radio"
+                  name="lang"
+                  checked={l === LANG}
+                  disabled={switching}
+                  onChange={() => {
+                    setSwitching(true);
+                    switchLang(l);
+                  }}
+                />
+              </label>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="panel stack">
         <h2>Daily goal</h2>
@@ -79,7 +116,7 @@ export default function SettingsPage() {
         ) : (
           <>
             <div className="field">
-              <label htmlFor="voice">German voice</label>
+              <label htmlFor="voice">{L.name} voice</label>
               <select
                 id="voice"
                 className="text-input"
@@ -95,8 +132,8 @@ export default function SettingsPage() {
               </select>
               {voices.length === 0 && (
                 <p className="small muted">
-                  No German voice found on this device. On iPhone, add one in Settings, Accessibility, Spoken Content, Voices,
-                  German. On Windows, add the German speech pack.
+                  No {L.name} voice found on this device. On iPhone, add one in Settings, Accessibility, Spoken Content, Voices,
+                  {L.name}. On Windows, add the {L.name} speech pack.
                 </p>
               )}
             </div>
@@ -116,7 +153,7 @@ export default function SettingsPage() {
               Test the voice
             </button>
             <label className="toggle">
-              <span>Play German automatically</span>
+              <span>Play {L.name} automatically</span>
               <input type="checkbox" checked={s.autoplay} onChange={(e) => updateSettings({ autoplay: e.target.checked })} />
             </label>
           </>
@@ -130,7 +167,7 @@ export default function SettingsPage() {
           <div className="chips">
             {(
               [
-                ["de-en", "German"],
+                ["de-en", L.name],
                 ["en-de", "English"],
                 ["mixed", "Mix both"],
               ] as const
@@ -140,7 +177,7 @@ export default function SettingsPage() {
               </button>
             ))}
           </div>
-          <p className="small muted">English on the front is harder: you have to come up with the German yourself.</p>
+          <p className="small muted">English on the front is harder: you have to come up with the {L.name} yourself.</p>
         </div>
       </section>
 

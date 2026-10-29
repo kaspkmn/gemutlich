@@ -1,5 +1,6 @@
 "use client";
 
+import { L } from "@/lib/lang";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -136,7 +137,7 @@ export default function UnitPage() {
       {step === "notes" && (
         <>
           <Notes notes={unit.notes} />
-          {unit.id === "articles" && (
+          {unit.id === L.articlesUnit && (
             <Link href="/genders" className="why-link">
               Full guide: how to tell if a noun is der, die or das →
             </Link>
@@ -224,7 +225,7 @@ function WordsStep({ words, onNext }: { words: CourseWord[]; onNext: () => void 
         <div className={`tile g-${w.gender ?? ""}`}>
           <div className="stack">
             <div className="row">
-              <p className="tile-word grow" lang="de">
+              <p className="tile-word grow" lang={L.code}>
                 <GermanWord de={w.de} gender={w.gender} />
               </p>
               <SpeakButton text={w.de} big />
@@ -238,7 +239,7 @@ function WordsStep({ words, onNext }: { words: CourseWord[]; onNext: () => void 
             {w.ex && (
               <div className="example row">
                 <div className="grow">
-                  <p className="de" lang="de">
+                  <p className="de" lang={L.code}>
                     {w.ex[0]}
                   </p>
                   <p className="muted small">{w.ex[1]}</p>
