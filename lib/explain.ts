@@ -6,6 +6,7 @@ import type { Exercise } from "./exercises";
 import { englishVariants, lev, norm, tokens } from "./answers";
 import { analyzeNoun, ARTICLE } from "./gender-rules";
 import { lookupWord } from "./lexicon";
+import { IS_ES, L } from "./lang";
 
 /*
  * Explains why an answer was wrong, without any AI:
@@ -28,7 +29,7 @@ export interface Explanation {
 
 // ── what small words do ────────────────────────────────────────────────────
 
-const ROLE: Record<string, string> = {
+const DE_ROLE: Record<string, string> = {
   der: "der is \"the\" for a masculine noun as the subject, or for a feminine noun after mit, bei, von, zu (dative)",
   die: "die is \"the\" for feminine nouns and for all plurals",
   das: "das is \"the\" for neuter nouns",
@@ -102,6 +103,74 @@ const ROLE: Record<string, string> = {
   besser: "besser means \"better\" (gut → besser → am besten)",
 };
 
+const ES_ROLE: Record<string, string> = {
+  el: "el is \"the\" for masculine nouns",
+  la: "la is \"the\" for feminine nouns (and also means \"her\" or \"it\" as an object)",
+  los: "los is \"the\" for masculine plurals and mixed groups (and also means \"them\")",
+  las: "las is \"the\" for feminine plurals (and also means \"them\" for all-feminine groups)",
+  un: "un is \"a\" for masculine nouns",
+  una: "una is \"a\" for feminine nouns",
+  unos: "unos means \"some\" for masculine plurals",
+  unas: "unas means \"some\" for feminine plurals",
+  al: "al is a + el: \"to the\" for masculine places (voy al mercado)",
+  del: "del is de + el: \"of the\" or \"from the\" for masculine nouns",
+  a: "a means \"to\" or \"at\" (and comes before people as objects: veo a María)",
+  de: "de means \"of\" or \"from\"",
+  en: "en means \"in\", \"on\" or \"at\"",
+  con: "con means \"with\"",
+  por: "por means \"for\", \"through\" or \"by\" (and por la mañana = in the morning)",
+  para: "para means \"for\" or \"in order to\"",
+  mi: "mi means \"my\" with one thing",
+  mis: "mis means \"my\" with more than one thing",
+  tu: "tu (no accent) means \"your\"; tú with an accent means \"you\"",
+  tú: "tú (with an accent) means \"you\"; tu without it means \"your\"",
+  su: "su means \"his\", \"her\", \"their\" or \"your\" (formal), with one thing",
+  sus: "sus is su with more than one thing",
+  yo: "yo means \"I\"",
+  me: "me means \"me\" or \"to me\", and goes right before the verb",
+  te: "te means \"you\" or \"to you\" (informal), and goes right before the verb",
+  lo: "lo means \"him\" or \"it\" (masculine) as the object",
+  le: "le means \"to him\", \"to her\" or \"to you\" (formal), used with gustar, dar, decir...",
+  les: "les means \"to them\" or \"to you all\"",
+  nos: "nos means \"us\" or \"to us\"",
+  no: "no goes right before the verb to make it negative",
+  nada: "nada means \"nothing\" (and still needs no before the verb: no tengo nada)",
+  nunca: "nunca means \"never\"",
+  nadie: "nadie means \"nobody\"",
+  también: "también means \"also, too\" for positive sentences",
+  tampoco: "tampoco means \"neither, not either\" for negative sentences",
+  qué: "qué means \"what\"",
+  quién: "quién means \"who\"",
+  dónde: "dónde means \"where\"",
+  adónde: "adónde means \"where to\"",
+  cuándo: "cuándo means \"when\"",
+  cómo: "cómo means \"how\"",
+  "por qué": "por qué (two words, accent) means \"why\"; porque (one word) means \"because\"",
+  porque: "porque (one word) means \"because\"; por qué means \"why\"",
+  cuánto: "cuánto means \"how much\"",
+  cuántos: "cuántos means \"how many\" (masculine)",
+  cuántas: "cuántas means \"how many\" (feminine)",
+  cuál: "cuál means \"which\" or \"what\" when choosing",
+  pero: "pero means \"but\"",
+  y: "y means \"and\"",
+  o: "o means \"or\"",
+  que: "que (no accent) means \"that\" or \"than\"",
+  si: "si (no accent) means \"if\"; sí means \"yes\"",
+  sí: "sí (with an accent) means \"yes\"; si means \"if\"",
+  cuando: "cuando (no accent) means \"when\" in the middle of a sentence",
+  muy: "muy means \"very\"",
+  mucho: "mucho means \"a lot\" or \"much\" (and changes to match: mucha, muchos)",
+  más: "más means \"more\" (más ... que = more ... than)",
+  menos: "menos means \"less\" (and in clock times, \"to\": las tres menos cuarto)",
+  mejor: "mejor means \"better\" or \"best\"",
+  peor: "peor means \"worse\" or \"worst\"",
+  hay: "hay means \"there is\" or \"there are\"",
+  gusta: "gusta is used when one thing is liked (me gusta el café)",
+  gustan: "gustan is used when more than one thing is liked (me gustan los perros)",
+};
+
+const ROLE: Record<string, string> = IS_ES ? ES_ROLE : DE_ROLE;
+
 const VERB_FORM_INDEX = new Map<string, { verb: Verb; persons: number[] }[]>();
 for (const v of VERBS) {
   v.forms.forEach((f, i) => {
@@ -117,6 +186,9 @@ for (const v of VERBS) {
 /** Add a full stop unless the text already ends a sentence. */
 const end = (s: string) => (/[.!?]$/.test(s.trim()) ? s.trim() : `${s.trim()}.`);
 
+/** "to be (who or what)" → "to be", so it reads well inside parentheses */
+const verbEn = (v: Verb) => v.en.replace(/\s*\([^)]*\)/g, "");
+
 const personName = (i: number) => PERSONS[i];
 const personsText = (ps: number[]) => ps.map(personName).join(" and ");
 
@@ -129,8 +201,11 @@ export function describeWord(given: string): string | null {
   const forms = VERB_FORM_INDEX.get(low);
   if (forms?.length) {
     const f = forms[0];
-    if (g.toLowerCase() === f.verb.inf) return `${g} is the infinitive (the dictionary form), which is also the wir and sie/Sie form of ${f.verb.inf} (${f.verb.en})`;
-    return `${g} is the ${personsText(f.persons)} form of ${f.verb.inf} (${f.verb.en})`;
+    if (g.toLowerCase() === f.verb.inf)
+      return IS_ES
+        ? `${g} is the infinitive (the dictionary form) of ${f.verb.inf} (${verbEn(f.verb)}). After a person it needs an ending`
+        : `${g} is the infinitive (the dictionary form), which is also the wir and sie/Sie form of ${f.verb.inf} (${verbEn(f.verb)})`;
+    return `${g} is the ${personsText(f.persons)} form of ${f.verb.inf} (${verbEn(f.verb)})`;
   }
   const hit = lookupWord(g);
   if (hit) return `${g} means \"${hit.meaning}\"`;
@@ -139,11 +214,40 @@ export function describeWord(given: string): string | null {
 
 // ── spelling ───────────────────────────────────────────────────────────────
 
+/** letters only, no umlauts or accents */
 const plain = (s: string) =>
-  s.toLowerCase().replace(/ä/g, "a").replace(/ö/g, "o").replace(/ü/g, "u").replace(/ß/g, "ss").replace(/[^a-z ]/g, "").replace(/\s+/g, " ").trim();
-const low = (s: string) => s.toLowerCase().replace(/[.,!?"„“]/g, "").replace(/\s+/g, " ").trim();
+  s
+    .toLowerCase()
+    .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+const low = (s: string) => s.toLowerCase().replace(/[.,!?"„“¿¡]/g, "").replace(/\s+/g, " ").trim();
 
-const SOUND_SWAPS: [string, string, string][] = [
+const ES_SOUND_SWAPS: [string, string, string][] = [
+  ["b", "v", "b and v sound exactly the same in Spanish, so the spelling just has to be learned (vaso, vivir)"],
+  ["v", "b", "b and v sound exactly the same in Spanish, so the spelling just has to be learned (bueno, beber)"],
+  ["y", "ll", "ll and y sound the same in Mexico, so the spelling just has to be learned (llamar, calle)"],
+  ["ll", "y", "ll and y sound the same in Mexico, so the spelling just has to be learned (yo, playa)"],
+  ["s", "z", "in Latin America z sounds like s, so the spelling just has to be learned (zapato, azul)"],
+  ["s", "c", "in Latin America c before e or i sounds like s (cena, cinco)"],
+  ["z", "s", "z and s sound the same in Latin America; this one is spelled with s"],
+  ["c", "s", "c before e or i and s sound the same in Latin America; this one is spelled with s"],
+  ["k", "qu", "the k sound before e or i is spelled qu, and the u is silent (queso, quiero)"],
+  ["k", "c", "the k sound before a, o or u is spelled c (casa, comer)"],
+  ["ny", "ñ", "the \"ny\" sound is spelled ñ (año, mañana)"],
+  ["nn", "ñ", "the \"ny\" sound is spelled ñ (año, mañana)"],
+  ["h", "j", "the breathy h sound is spelled j (or g before e and i): jugar, gente"],
+  ["j", "g", "j and g before e or i make the same sound, so the spelling just has to be learned (gente, general)"],
+  ["g", "j", "j and g before e or i make the same sound, so the spelling just has to be learned (jefe, jugo)"],
+  ["w", "gu", "the w sound is spelled gu or hu (agua, huevo)"],
+  ["r", "rr", "between vowels a rolled r is written rr (perro); a single r is a quick tap (pero)"],
+  ["rr", "r", "a single r between vowels is a quick tap (pero); rr is the long rolled r (perro)"],
+];
+
+const DE_SOUND_SWAPS: [string, string, string][] = [
   ["ei", "ie", "ei sounds like \"eye\" and ie sounds like \"ee\": write the second letter you hear (Wein = vine, Liebe = lee-buh)"],
   ["ie", "ei", "ie sounds like \"ee\" and ei sounds like \"eye\": write the second letter you hear (Liebe = lee-buh, Wein = vine)"],
   ["v", "w", "German w is said like an English v, so the v sound is usually spelled w"],
@@ -156,12 +260,25 @@ const SOUND_SWAPS: [string, string, string][] = [
   ["z", "tz", "after a short vowel, z becomes tz"],
 ];
 
+const SOUND_SWAPS = IS_ES ? ES_SOUND_SWAPS : DE_SOUND_SWAPS;
+
 /** Explain a misspelling of `answer` as `given`. Empty if it isn't a near miss. */
 export function spellingHints(given: string, answer: string): string[] {
   const g = low(given);
   const a = low(answer);
   if (!g || g === a) return [];
   const hints: string[] = [];
+  if (IS_ES && plain(g) === plain(a)) {
+    const marks = [...new Set([...a].filter((c) => "áéíóúñü".includes(c)))];
+    hints.push(
+      marks.length
+        ? marks.length === 1 && marks[0] === "ñ"
+          ? `Watch the ñ: it's ${answer}. ñ is its own letter, said \"ny\", so n and ñ make different words (ano and año). There's a button for it under each text box.`
+          : `Watch the accent: it's ${answer}, with ${marks.join(", ")}. Accents show which syllable is stressed, and sometimes change the meaning (esta = this, está = is; si = if, sí = yes). There are buttons for them under each text box.`
+        : `Check the accents: ${answer} doesn't have any.`
+    );
+    return hints;
+  }
   if (plain(g) === plain(a)) {
     const um = [...a].filter((c) => "äöüß".includes(c));
     const which = [...new Set(um)].join(", ");
@@ -173,19 +290,27 @@ export function spellingHints(given: string, answer: string): string[] {
     return hints;
   }
   for (const [from, to, why] of SOUND_SWAPS) {
-    if (g.includes(from) && g.replace(from, to) === a) {
+    if (g.includes(from) && (g.replace(from, to) === a || g.split(from).join(to) === a)) {
       hints.push(`Spelling: ${why}.`);
       return hints;
     }
   }
-  const vowelH = [...g].some((_, i) => /[aeiouäöü]/.test(g[i - 1] ?? "") && g.slice(0, i) + "h" + g.slice(i) === a);
+  if (IS_ES && [...g, ""].some((_, i) => g.slice(0, i) + "h" + g.slice(i) === a)) {
+    hints.push(`There's a silent h in ${answer}. Spanish h is never pronounced, so it's easy to leave out (hola, hablar, ahora).`);
+    return hints;
+  }
+  const vowelH = !IS_ES && [...g].some((_, i) => /[aeiouäöü]/.test(g[i - 1] ?? "") && g.slice(0, i) + "h" + g.slice(i) === a);
   if (vowelH) {
     hints.push(`There's a silent h in ${answer}. An h after a vowel isn't pronounced, it just makes the vowel long (wohnen, Uhr, sehr).`);
     return hints;
   }
   const undouble = (s: string) => s.replace(/(.)\1/g, "$1");
   if (undouble(plain(g)) === undouble(plain(a))) {
-    hints.push(`Close: watch the double letters in ${answer}. A double consonant after a vowel makes that vowel short.`);
+    hints.push(
+      IS_ES
+        ? `Close: watch the double letters in ${answer}. Spanish only doubles a few letters: rr, ll, cc and nn.`
+        : `Close: watch the double letters in ${answer}. A double consonant after a vowel makes that vowel short.`
+    );
     return hints;
   }
   if (a.length >= 4 && lev(plain(g), plain(a)) <= 2) hints.push(`Close, just a spelling slip. Compare the letters below.`);
@@ -223,6 +348,10 @@ const wordEq = (a: string, b: string) => norm(a) === norm(b);
 
 // ── per-exercise explanations ──────────────────────────────────────────────
 
+const ARTICLE_MEANS: Record<string, string> = IS_ES
+  ? { el: "masculine", la: "feminine", los: "masculine plural", las: "feminine plural" }
+  : { der: "masculine", die: "feminine (or plural)", das: "neuter" };
+
 const findByEn = (en: string): CourseWord | undefined => ALL_WORDS.find((w) => w.en === en);
 const findByDe = (de: string): CourseWord | undefined => ALL_WORDS.find((w) => w.de === de);
 
@@ -245,9 +374,8 @@ export function lessonWhy(ex: Exercise): string | undefined {
   switch (ex.kind) {
     case "fill":
     case "fillType":
-      return WHY[ex.de];
     case "build":
-      return WHY[ex.de];
+      return ex.why ?? WHY[ex.de];
     case "choice":
       return WHY[ex.q] ?? ex.explain;
     default:
@@ -258,13 +386,18 @@ export function lessonWhy(ex: Exercise): string | undefined {
 function conjExplanation(ex: Extract<Exercise, { kind: "conj" }>, given: string): Explanation {
   const { verb, person } = ex;
   const right = verb.forms[person];
-  const g = given.trim().toLowerCase().replace(/^(ich|du|er|sie|es|wir|ihr|sie|man)\s+/, "");
+  const g = given
+    .trim()
+    .toLowerCase()
+    .replace(IS_ES ? /^(yo|tú|tu|él|el|ella|usted|nosotros|nosotras|vosotros|ellos|ellas|ustedes)\s+/ : /^(ich|du|er|sie|es|wir|ihr|sie|man)\s+/, "");
   const points: string[] = [];
   const persons = verb.forms.map((f, i) => (f.toLowerCase() === g ? i : -1)).filter((i) => i >= 0);
   if (g && g === verb.inf.toLowerCase() && !persons.includes(person)) {
     points.push(`${given.trim()} is the infinitive, the form you'd find in a dictionary. With ${PERSONS[person]} it needs its own ending: ${right}.`);
   } else if (persons.length) {
     points.push(`${given.trim()} is the ${personsText(persons)} form. For ${PERSONS[person]}, it's ${right}.`);
+  } else if (g && g === regularForms(verb.inf)[person].toLowerCase() && g !== right.toLowerCase()) {
+    points.push(`${given.trim()} is what a regular verb would do, but ${verb.inf} doesn't follow the regular pattern here. For ${PERSONS[person]}, it's ${right}.`);
   } else if (g) {
     const hints = spellingHints(g, right);
     if (hints.length) points.push(...hints);
@@ -272,29 +405,110 @@ function conjExplanation(ex: Extract<Exercise, { kind: "conj" }>, given: string)
       const other = VERB_FORM_INDEX.get(g)?.find((x) => x.verb !== verb);
       points.push(
         other
-          ? `${given.trim()} ${g === other.verb.inf ? "is" : `comes from`} a different verb, ${other.verb.inf} (${other.verb.en}). This one is ${verb.inf} (${verb.en}), and for ${PERSONS[person]} it's ${right}.`
+          ? `${given.trim()} ${g === other.verb.inf ? "is" : `comes from`} a different verb, ${other.verb.inf} (${verbEn(other.verb)}). This one is ${verb.inf} (${verbEn(verb)}), and for ${PERSONS[person]} it's ${right}.`
           : `${given.trim()} isn't a form of ${verb.inf}. For ${PERSONS[person]}, it's ${right}.`
       );
     }
   }
-  const regular = regularForms(verb.inf);
-  const irregular = regular[person] !== right;
-  const modal = ["können", "müssen", "wollen", "dürfen", "sollen", "mögen", "möchten"].includes(verb.inf);
-  if (verb.inf === "sein" || verb.inf === "haben" || verb.inf === "wissen") {
-    points.push(`${verb.inf} is irregular, so its forms have to be learned as a set.`);
-  } else if (modal) {
-    points.push(`${verb.inf} is a modal verb: ich and er/sie/es have the same form with no ending (ich ${verb.forms[0]}, er ${verb.forms[2]}), and the singular often changes its vowel.`);
-  } else if (irregular && (person === 1 || person === 2)) {
-    points.push(`${verb.inf} changes its vowel, but only for du and er/sie/es: du ${verb.forms[1]}, er ${verb.forms[2]}. All the other forms are regular.`);
-  } else {
-    const endings = ["\u2011e", "\u2011st", "\u2011t", "\u2011en", "\u2011t", "\u2011en"];
-    points.push(`Regular pattern: take ${verb.inf}, drop the \u2011en, and add the ${PERSONS[person]} ending, ${endings[person]}.${/[td]en$/.test(verb.inf) && (person === 1 || person === 2 || person === 4) ? " The stem ends in t or d, so an extra e is added to make it sayable." : ""}`);
+  if (IS_ES) points.push(esVerbPattern(verb, person));
+  else {
+    const regular = regularForms(verb.inf);
+    const irregular = regular[person] !== right;
+    const modal = ["können", "müssen", "wollen", "dürfen", "sollen", "mögen", "möchten"].includes(verb.inf);
+    if (verb.inf === "sein" || verb.inf === "haben" || verb.inf === "wissen") {
+      points.push(`${verb.inf} is irregular, so its forms have to be learned as a set.`);
+    } else if (modal) {
+      points.push(`${verb.inf} is a modal verb: ich and er/sie/es have the same form with no ending (ich ${verb.forms[0]}, er ${verb.forms[2]}), and the singular often changes its vowel.`);
+    } else if (irregular && (person === 1 || person === 2)) {
+      points.push(`${verb.inf} changes its vowel, but only for du and er/sie/es: du ${verb.forms[1]}, er ${verb.forms[2]}. All the other forms are regular.`);
+    } else {
+      const endings = ["\u2011e", "\u2011st", "\u2011t", "\u2011en", "\u2011t", "\u2011en"];
+      points.push(`Regular pattern: take ${verb.inf}, drop the \u2011en, and add the ${PERSONS[person]} ending, ${endings[person]}.${/[td]en$/.test(verb.inf) && (person === 1 || person === 2 || person === 4) ? " The stem ends in t or d, so an extra e is added to make it sayable." : ""}`);
+    }
   }
   return {
     points,
     letters: g && !persons.length && (spellingHints(g, right).length || lev(plain(g), plain(right)) <= 2) ? { given: g, answer: right } : undefined,
-    table: { title: verb.inf, rows: verb.forms.map((f, i) => [PERSONS[i], f]), highlight: person },
+    table: { title: verb.inf, rows: verb.forms.map((f, i) => [IS_ES && i === 4 ? `${PERSONS[i]} (Spain only)` : PERSONS[i], f]), highlight: person },
   };
+}
+
+/** What kind of Spanish verb this is, and how this person's form is made. */
+function esVerbPattern(verb: Verb, person: number): string {
+  const right = verb.forms[person];
+  const regular = regularForms(verb.inf);
+  // vosotros (Spain only) is left out of the comparison
+  const diffs = verb.forms.map((f, i) => (f !== regular[i] && i !== 4 ? i : -1)).filter((i) => i >= 0);
+  const ending = verb.inf.slice(-2);
+  const ENDINGS: Record<string, string[]> = {
+    ar: ["o", "as", "a", "amos", "áis", "an"],
+    er: ["o", "es", "e", "emos", "éis", "en"],
+    ir: ["o", "es", "e", "imos", "ís", "en"],
+  };
+  const endingOf = (i: number) => `\u2011${(ENDINGS[ending] ?? ENDINGS.ar)[i]}`;
+  if (["ser", "estar", "ir", "haber"].includes(verb.inf)) {
+    return `${verb.inf} is irregular, so its forms have to be learned as a set.${verb.inf === "estar" ? " Notice the accents: estás, está, están." : ""}`;
+  }
+  if (!diffs.length) {
+    return `Regular pattern: take ${verb.inf}, drop the \u2011${ending}, and add the ${PERSONS[person].split(" / ")[0]} ending, ${endingOf(person)}.`;
+  }
+  const boot = [1, 2, 5].every((i) => diffs.includes(i)) && !diffs.includes(3);
+  if (boot) {
+    // which vowel change: e → ie, o → ue, u → ue (jugar) or e → i
+    const plainStem = regular[1].slice(0, -2);
+    const bootStem = verb.forms[1].slice(0, -2);
+    const [from, to] =
+      bootStem.includes("ie") && !plainStem.includes("ie")
+        ? ["e", "ie"]
+        : bootStem.includes("ue") && !plainStem.includes("ue")
+          ? [plainStem.includes("o") ? "o" : "u", "ue"]
+          : ["e", "i"];
+    const yoExtra = verb.forms[0] !== `${bootStem}o`;
+    return `${verb.inf} is a stem-changing verb: ${from} becomes ${to} in every form except nosotros (and vosotros). Think of it as a boot: yo, tú, él and ellos are inside it, nosotros is outside. ${verb.forms[1]}, ${verb.forms[2]}, but ${verb.forms[3]}.${
+      yoExtra ? ` On top of that, the yo form is irregular: ${verb.forms[0]}.` : ""
+    } The endings are the regular ${ending} ones.`;
+  }
+  if (diffs.length === 1 && diffs[0] === 0) {
+    return `${verb.inf} is regular except for yo: ${verb.forms[0]}. Every other form follows the normal pattern${person !== 0 ? `, so for ${PERSONS[person].split(" / ")[0]} it's ${right}` : ""}.`;
+  }
+  return `${verb.inf} is irregular, so its forms have to be learned as a set.`;
+}
+
+const ES_OBJ = /^(me|te|lo|la|le|nos|los|las|les|se)$/i;
+
+/** Spanish word-order rules that a wrongly ordered sentence breaks. */
+function esOrderHints(target: string[], mine: string[]): string[] {
+  const t = target.map((x) => x.toLowerCase());
+  const m = mine.map((x) => x.toLowerCase());
+  const pos = (arr: string[], w: string) => arr.indexOf(w);
+  const isVerb = (w: string) => VERB_FORM_INDEX.has(w);
+  const hints: string[] = [];
+  // no right before the verb (and its pronouns)
+  const ni = pos(t, "no");
+  if (ni >= 0 && ni + 1 < t.length && m[pos(m, "no") + 1] !== t[ni + 1]) {
+    hints.push(`no goes right in front of the verb, and in front of little words like me, te or lo: ${target.slice(ni, ni + 3).join(" ")}${ni + 3 < target.length ? "..." : "."}`);
+  }
+  // object pronoun right before the conjugated verb
+  const oi = t.findIndex((w, i) => ES_OBJ.test(w) && isVerb(t[i + 1] ?? ""));
+  if (!hints.length && oi >= 0) {
+    const mi = pos(m, t[oi]);
+    if (mi < 0 || m[mi + 1] !== t[oi + 1]) {
+      hints.push(`Words like me, te, lo, la and le go right before the conjugated verb, not after it: ${target[oi]} ${target[oi + 1]}.`);
+    }
+  }
+  // describing word after the noun
+  if (!hints.length) {
+    for (let i = 0; i + 1 < t.length; i++) {
+      const a = t[i];
+      const b = t[i + 1];
+      const mi = pos(m, b);
+      if (mi >= 0 && m[mi + 1] === a && !isVerb(a) && !isVerb(b) && !ES_ROLE[a] && !ES_ROLE[b]) {
+        hints.push(`Describing words usually come after the noun in Spanish: ${target[i]} ${target[i + 1]}, the opposite of English.`);
+        break;
+      }
+    }
+  }
+  return hints;
 }
 
 function buildExplanation(ex: Extract<Exercise, { kind: "build" }>, given: string): Explanation {
@@ -312,7 +526,10 @@ function buildExplanation(ex: Extract<Exercise, { kind: "build" }>, given: strin
   }
   if (missing.length && !extra.length) points.push(`You left out ${missing.map((m) => `"${m}"`).join(", ")}.`);
 
-  if (!extra.length && !missing.length) {
+  if (!extra.length && !missing.length && IS_ES) {
+    points.push(...esOrderHints(target, mine));
+    if (!points.length) points.push("All the right words, just in a different order. Compare the two below.");
+  } else if (!extra.length && !missing.length) {
     // right words, wrong order: find the verb and check its place
     const isVerb = (t: string) => VERB_FORM_INDEX.has(t.toLowerCase());
     const vt = target.findIndex(isVerb);
@@ -354,7 +571,7 @@ export function explain(ex: Exercise, given: string | undefined): Explanation | 
         const other = ex.dir === "de-en" ? findByEn(g) : findByDe(g);
         if (other) {
           points.push(
-            ex.dir === "de-en" ? `You picked "${g}", which is ${other.de} in German.` : `You picked ${g}, which means "${other.en}".`
+            ex.dir === "de-en" ? `You picked "${g}", which is ${other.de} in ${L.name}.` : `You picked ${g}, which means "${other.en}".`
           );
         }
       }
@@ -379,14 +596,14 @@ export function explain(ex: Exercise, given: string | undefined): Explanation | 
       const w = ex.word;
       const points: string[] = [];
       let letters: Explanation["letters"];
-      const m = /^(der|die|das) (.+)$/.exec(w.de);
-      const gParts = /^(der|die|das)\s+(.+)$/i.exec(g);
+      const m = L.articleRe.exec(w.de);
+      const gParts = (IS_ES ? /^(el|la|los|las)\s+(.+)$/i : /^(der|die|das)\s+(.+)$/i).exec(g);
       if (m && norm(g) === norm(m[2])) {
         points.push(`The word is right, but nouns always need their article: ${end(w.de)}`);
         const gp = genderPoint(w);
         if (gp) points.push(gp);
       } else if (m && gParts && norm(gParts[2]) === norm(m[2]) && gParts[1].toLowerCase() !== m[1]) {
-        points.push(`You wrote ${gParts[1].toLowerCase()}, which would make it ${{ der: "masculine", die: "feminine (or plural)", das: "neuter" }[gParts[1].toLowerCase() as "der" | "die" | "das"]}. It's ${end(w.de)}`);
+        points.push(`You wrote ${gParts[1].toLowerCase()}, which would make it ${ARTICLE_MEANS[gParts[1].toLowerCase()] ?? gParts[1]}. It's ${end(w.de)}`);
         const gp = genderPoint(w);
         if (gp) points.push(gp);
       } else if (g) {
@@ -425,8 +642,8 @@ export function explain(ex: Exercise, given: string | undefined): Explanation | 
       const w = ex.word;
       const points: string[] = [];
       const picked = g.split(" ")[0]?.toLowerCase();
-      const real = /^(der|die|das)/.exec(w.de)?.[1];
-      if (picked && picked !== real) points.push(`${picked} would make it ${{ der: "masculine", die: "feminine", das: "neuter" }[picked as "der" | "die" | "das"] ?? picked}. It's ${end(w.de)}`);
+      const real = L.articleRe.exec(w.de)?.[1];
+      if (picked && picked !== real) points.push(`${picked} would make it ${ARTICLE_MEANS[picked] ?? picked}. It's ${end(w.de)}`);
       const gp = genderPoint(w);
       if (gp) points.push(gp);
       return { points, link: { href: "/genders", label: "How noun genders work" } };
@@ -523,7 +740,19 @@ export function explainCorrect(ex: Exercise): Explanation | null {
 
 // ── listening ──────────────────────────────────────────────────────────────
 
-const SOUNDS: [RegExp, string][] = [
+const ES_SOUNDS: [RegExp, string][] = [
+  [/ñ/i, "ñ sounds like the ny in \"canyon\""],
+  [/ll/i, "ll sounds like the English y"],
+  [/rr/i, "rr is a long rolled r"],
+  [/j|g[ei]/i, "j (and g before e or i) is a breathy h sound"],
+  [/qu/i, "qu sounds like k, and the u is silent"],
+  [/(^|[^c])h/i, "h is always silent"],
+  [/z|c[ei]/i, "z, and c before e or i, sound like s"],
+  [/v/i, "v sounds the same as b"],
+  [/[áéíóú]/i, "the accent mark shows which syllable is stressed"],
+];
+
+const DE_SOUNDS: [RegExp, string][] = [
   [/ei/i, "ei sounds like \"eye\""],
   [/ie/i, "ie sounds like \"ee\""],
   [/eu|äu/i, "eu and äu sound like \"oy\""],
@@ -538,6 +767,8 @@ const SOUNDS: [RegExp, string][] = [
   [/^v|[^a-z]v/i, "v usually sounds like f"],
   [/^s[pt]/i, "sp and st at the start sound like \"shp\" and \"sht\""],
 ];
+
+const SOUNDS = IS_ES ? ES_SOUNDS : DE_SOUNDS;
 
 /** Point out sounds that differ between what was said and what was picked. */
 function soundTips(target: string, picked: string): string[] {

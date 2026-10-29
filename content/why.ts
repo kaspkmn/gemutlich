@@ -3,7 +3,9 @@
  * sentence (fill and build) or its question text (choice).
  * Shown whenever you get one wrong.
  */
-export const WHY: Record<string, string> = {
+import { IS_ES } from "@/lib/lang";
+
+const DE_WHY: Record<string, string> = {
   // ── 1. Sounds ──
   'Which word has the "ts" sound?': "German z is always pronounced ts, like the end of \"cats\". Zeit sounds like \"tsite\".",
   '"Wein" sounds most like...': "w is said like an English v, and ei sounds like \"eye\". Put together: \"vine\".",
@@ -227,3 +229,6 @@ export const WHY: Record<string, string> = {
   "Im Herbst regnet es viel.": "Im Herbst takes first place, so the verb (regnet) comes next and es follows.",
   "Which season is der Herbst?": "der Herbst is fall. der Frühling is spring, der Sommer summer, der Winter winter.",
 };
+
+/** German reasons by question. Spanish lessons keep their reasons on each question instead. */
+export const WHY: Record<string, string> = IS_ES ? {} : DE_WHY;

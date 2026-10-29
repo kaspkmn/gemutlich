@@ -33,6 +33,8 @@ export interface GenerateResult {
   hint: string;
 }
 
+import { LANG } from "./lang";
+
 export class AiRequestError extends Error {
   constructor(message: string, public code?: string) {
     super(message);
@@ -45,7 +47,7 @@ export async function askAi<T>(body: Record<string, unknown>): Promise<T> {
     res = await fetch("/api/ai", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ lang: LANG, ...body }),
     });
   } catch {
     throw new AiRequestError("Can't reach the server. Check your connection and try again.");

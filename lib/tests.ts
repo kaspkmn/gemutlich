@@ -1,3 +1,4 @@
+import { L } from "@/lib/lang";
 import { ALL_SENTENCES, UNITS, getUnit } from "@/content/course";
 import type { CourseWord } from "@/content/types";
 import { VERBS } from "@/content/verbs";
@@ -23,7 +24,7 @@ export type QType = "choice" | "written" | "listening" | "build";
 
 export const QTYPES: { id: QType; label: string; blurb: string }[] = [
   { id: "choice", label: "Multiple choice", blurb: "Meanings, der/die/das, grammar questions, fill the gap" },
-  { id: "written", label: "Written", blurb: "Type the German, type the English, fill the gap, verb endings" },
+  { id: "written", label: "Written", blurb: `Type the ${L.name}, type the English, fill the gap, verb endings` },
   { id: "listening", label: "Listening", blurb: "Pick what you heard, or type it (needs sound)" },
   { id: "build", label: "Sentence building", blurb: "Put the words in the right order" },
 ];

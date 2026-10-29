@@ -1,8 +1,15 @@
 import { UNITS as UNITS_1 } from "./units";
 import { UNITS_2 } from "./units2";
-import type { CourseWord, Unit } from "./types";
+import { ES_UNITS_1 } from "./es/units";
+import { ES_UNITS_2 } from "./es/units2";
+import { ES_SCENARIOS } from "./es/scenarios";
+import type { ChatScenario, CourseWord, Unit } from "./types";
+import { IS_ES, type Lang } from "@/lib/lang";
 
-export const UNITS: Unit[] = [...UNITS_1, ...UNITS_2];
+export type { ChatScenario } from "./types";
+
+/** Lessons for the language being studied. */
+export const UNITS: Unit[] = IS_ES ? [...ES_UNITS_1, ...ES_UNITS_2] : [...UNITS_1, ...UNITS_2];
 
 export const ALL_WORDS: CourseWord[] = UNITS.flatMap((u) =>
   u.words.map((w) => ({ ...w, id: w.de, unitId: u.id }))
@@ -37,17 +44,7 @@ export const ALL_PROMPTS = UNITS.flatMap((u) =>
   (u.prompts ?? []).map(([de, en]) => ({ de, en, unitId: u.id }))
 );
 
-export interface ChatScenario {
-  id: string;
-  title: string;
-  titleDe: string;
-  blurb: string;
-  opener: string;
-  openerEn: string;
-  role: string;
-}
-
-export const SCENARIOS: ChatScenario[] = [
+export const DE_SCENARIOS: ChatScenario[] = [
   {
     id: "cafe",
     title: "At the café",
@@ -94,3 +91,14 @@ export const SCENARIOS: ChatScenario[] = [
     role: "You are Mia, a friendly German pen pal. Chat about whatever the learner brings up: their day, plans, food, hobbies, weekends. Use du.",
   },
 ];
+
+/** Lessons and scenarios for a specific language, for the server (which can't know the browser's choice). */
+export function unitsFor(lang: Lang): Unit[] {
+  return lang === "es" ? [...ES_UNITS_1, ...ES_UNITS_2] : [...UNITS_1, ...UNITS_2];
+}
+export function scenariosFor(lang: Lang): ChatScenario[] {
+  return lang === "es" ? ES_SCENARIOS : DE_SCENARIOS;
+}
+
+/** Role-play situations for the Write tab. */
+export const SCENARIOS: ChatScenario[] = IS_ES ? ES_SCENARIOS : DE_SCENARIOS;

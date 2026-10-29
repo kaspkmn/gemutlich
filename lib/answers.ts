@@ -1,18 +1,32 @@
 import type { Word } from "@/content/types";
+import { IS_ES } from "./lang";
 
-/** Lowercase, fold umlauts/ß, drop punctuation and "..." so "Strasse" matches "Straße". */
+/**
+ * Lowercase and drop punctuation and "...".
+ * German: fold umlauts/ß so "Strasse" matches "Straße".
+ * Spanish: accents are kept here (see `fold`), so a missing accent can be pointed out.
+ */
 export function norm(s: string): string {
-  return s
-    .normalize("NFC")
-    .toLowerCase()
-    .replace(/ß/g, "ss")
-    .replace(/ä/g, "ae")
-    .replace(/ö/g, "oe")
-    .replace(/ü/g, "ue")
+  let t = s.normalize("NFC").toLowerCase();
+  if (!IS_ES) t = t.replace(/ß/g, "ss").replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue");
+  return t
     .replace(/\.\.\.|…/g, " ")
     .replace(/[.,!?¿¡;:"'’‘()\-]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/** norm() without accents: "está" → "esta", "niño" → "nino". */
+export function fold(s: string): string {
+  return norm(s)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .normalize("NFC");
+}
+
+/** Right apart from accents or ñ (Spanish only; German umlauts are already folded by norm). */
+export function onlyAccents(input: string, answer: string): boolean {
+  return IS_ES && norm(input) !== norm(answer) && fold(input) === fold(answer);
 }
 
 export function lev(a: string, b: string): number {
@@ -37,29 +51,31 @@ export interface CheckResult {
   message?: string;
 }
 
-const ARTICLES = ["der", "die", "das"];
+const ARTICLES = IS_ES ? ["el", "la", "los", "las"] : ["der", "die", "das"];
+const accentMsg = (right: string) => `Watch the accents: ${right}`;
 
 function typoAllowance(s: string) {
   return s.replace(/ /g, "").length >= 6 ? 1 : 0;
 }
 
-/** Check a typed German answer against a word (handles articles, umlauts, small typos). */
+/** Check a typed answer against a word (handles articles, umlauts or accents, small typos). */
 export function checkWord(input: string, word: Pick<Word, "de" | "alts" | "type" | "gender">): CheckResult {
   const n = norm(input);
   if (!n) return { status: "wrong" };
   const candidates = [word.de, ...(word.alts ?? [])].map(norm);
   if (candidates.includes(n)) return { status: "correct" };
+  if (IS_ES && [word.de, ...(word.alts ?? [])].some((c) => fold(c) === fold(input))) return { status: "typo", message: accentMsg(word.de) };
 
   if (word.type === "noun") {
     const [article, ...rest] = norm(word.de).split(" ");
     const bare = rest.join(" ");
     const parts = n.split(" ");
-    if (n === bare || lev(n, bare) <= typoAllowance(bare)) {
+    if (fold(n) === fold(bare) || lev(n, bare) <= typoAllowance(bare)) {
       return { status: "almost", message: `Don't forget the article: ${word.de}` };
     }
     if (parts.length >= 2 && ARTICLES.includes(parts[0])) {
       const typedBare = parts.slice(1).join(" ");
-      if (typedBare === bare || lev(typedBare, bare) <= typoAllowance(bare)) {
+      if (fold(typedBare) === fold(bare) || lev(typedBare, bare) <= typoAllowance(bare)) {
         if (parts[0] !== article) {
           return { status: "wrong", message: `Check the gender: it's ${word.de}` };
         }
@@ -81,6 +97,7 @@ export function checkText(input: string, answers: string[]): CheckResult {
   if (!n) return { status: "wrong" };
   const cands = answers.map(norm);
   if (cands.includes(n)) return { status: "correct" };
+  if (IS_ES && answers.some((a) => fold(a) === fold(input))) return { status: "typo", message: accentMsg(answers[0]) };
   for (const c of cands) {
     if (c.length >= 10 && lev(n, c) <= 1) return { status: "typo", message: `Watch the spelling: ${answers[0]}` };
   }
@@ -90,7 +107,7 @@ export function checkText(input: string, answers: string[]): CheckResult {
 /** Split a sentence into tiles for sentence building. */
 export function tokens(sentence: string): string[] {
   return sentence
-    .replace(/[.,!?]/g, "")
+    .replace(/[.,!?¿¡]/g, "")
     .split(/\s+/)
     .filter(Boolean);
 }

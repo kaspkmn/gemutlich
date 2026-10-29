@@ -1,6 +1,7 @@
 import { ALL_WORDS } from "@/content/course";
 import { VERBS, PERSONS } from "@/content/verbs";
 import type { Gloss, Story } from "@/content/stories";
+import { IS_ES, L } from "./lang";
 
 export interface Lookup {
   /** the word as tapped */
@@ -13,7 +14,7 @@ export interface Lookup {
 }
 
 /** Small, very common words that every story uses. */
-const COMMON: Record<string, Gloss> = {
+const DE_COMMON: Record<string, Gloss> = {
   der: "the (masculine)",
   die: "the (feminine or plural)",
   das: "the (neuter); also: that",
@@ -82,7 +83,104 @@ const COMMON: Record<string, Gloss> = {
   Mia: "Mia (a name)",
 };
 
-const lower = (s: string) => s.toLocaleLowerCase("de-DE");
+const ES_COMMON: Record<string, Gloss> = {
+  el: "the (masculine)",
+  la: "the (feminine); also: her, it",
+  los: "the (masculine plural); also: them",
+  las: "the (feminine plural); also: them",
+  un: "a, an (masculine)",
+  una: "a, an (feminine)",
+  unos: "some",
+  unas: "some",
+  de: "of, from",
+  del: "of the (de + el)",
+  al: "to the (a + el)",
+  a: "to, at",
+  en: "in, on, at",
+  y: "and",
+  o: "or",
+  pero: "but",
+  que: "that, which; also: than",
+  qué: "what",
+  con: "with",
+  sin: "without",
+  por: "for, through, by",
+  para: "for, in order to",
+  mi: "my",
+  mis: "my (plural)",
+  tu: "your",
+  tus: "your (plural)",
+  tú: "you",
+  su: "his, her, their, your (formal)",
+  sus: "his, her, their (plural)",
+  nuestro: "our",
+  nuestra: "our",
+  yo: "I",
+  él: "he",
+  ella: "she",
+  usted: "you (formal)",
+  nosotros: "we",
+  ellos: "they",
+  ellas: "they (all women)",
+  ustedes: "you all",
+  me: "me, to me, myself",
+  te: "you, to you, yourself",
+  se: "himself, herself, themselves",
+  le: "to him, to her, to you",
+  les: "to them",
+  lo: "it, him",
+  nos: "us, to us",
+  es: "is (ser)",
+  son: "are (ser)",
+  soy: "am (ser)",
+  eres: "are (ser)",
+  está: "is (estar)",
+  están: "are (estar)",
+  estoy: "am (estar)",
+  hay: "there is, there are",
+  muy: "very",
+  también: "also, too",
+  no: "no, not",
+  sí: "yes",
+  si: "if",
+  este: "this",
+  esta: "this",
+  esto: "this (thing)",
+  eso: "that (thing)",
+  ese: "that",
+  esa: "that",
+  aquí: "here",
+  allí: "there",
+  ya: "already, now",
+  más: "more",
+  todo: "all, everything",
+  todos: "everyone, all",
+  mucho: "a lot, much",
+  muchos: "many",
+  poco: "little (un poco = a little)",
+  bien: "well, good",
+  mal: "badly, bad",
+  cuando: "when",
+  como: "like, as",
+  cómo: "how",
+  porque: "because",
+  hoy: "today",
+  mí: "me (after a, para, de: para mí = for me)",
+  ti: "you (after a, para, de: para ti = for you)",
+  favor: "favor (por favor = please)",
+  gusta: ["pleases (me gusta = I like)", "gustar"],
+  gustan: ["please (me gustan = I like, for more than one thing)", "gustar"],
+  encanta: ["delights (me encanta = I love)", "encantar"],
+  hace: "makes, does (hacer); also: ago (hace dos días)",
+  ahora: "now",
+  luego: "then, later",
+  después: "after, afterwards",
+  entonces: "so, then",
+};
+
+const COMMON: Record<string, Gloss> = IS_ES ? ES_COMMON : DE_COMMON;
+
+const lower = (s: string) => s.toLocaleLowerCase(L.bcp);
 
 /** exact-case keys (nouns are capitalized) and lowercase keys */
 const EXACT = new Map<string, Lookup>();
@@ -96,21 +194,21 @@ function add(key: string, l: Lookup, exact: boolean) {
 
 for (const w of ALL_WORDS) {
   if (w.type === "noun") {
-    const m = /^(der|die|das) (.+)$/.exec(w.de);
+    const m = L.articleRe.exec(w.de);
     const bare = m ? m[2] : w.de;
-    if (!bare.includes(" ")) add(bare, { word: bare, meaning: w.en, base: w.de, courseId: w.id }, true);
+    if (!bare.includes(" ")) add(bare, { word: bare, meaning: w.en, base: w.de, courseId: w.id }, !IS_ES);
     if (w.plural) {
-      const pm = /^die (.+)$/.exec(w.plural);
-      const pl = pm ? pm[1] : w.plural;
+      const pm = L.articleRe.exec(w.plural);
+      const pl = pm ? pm[2] : w.plural;
       if (!pl.includes(" ")) {
-        add(pl, { word: pl, meaning: `${w.en} (plural)`, base: w.de, courseId: w.id }, true);
-        // dative plural adds -n: den Kindern
-        if (!/[ns]$/.test(pl)) add(`${pl}n`, { word: `${pl}n`, meaning: `${w.en} (plural)`, base: w.de, courseId: w.id }, true);
+        add(pl, { word: pl, meaning: `${w.en} (plural)`, base: w.de, courseId: w.id }, !IS_ES);
+        // German dative plural adds -n: den Kindern
+        if (!IS_ES && !/[ns]$/.test(pl)) add(`${pl}n`, { word: `${pl}n`, meaning: `${w.en} (plural)`, base: w.de, courseId: w.id }, true);
       }
     }
   } else {
-    const clean = w.de.replace(/[.!?,]/g, "").trim();
-    if (!clean.includes(" ")) add(clean, { word: clean, meaning: w.en, base: w.de, courseId: w.id }, false);
+    const clean = w.de.replace(/[.!?,¿¡]/g, "").trim();
+    if (!clean.includes(" ")) add(clean, { word: clean, meaning: w.en.replace(/\s*\.\.\.$/, ""), base: w.de, courseId: w.id }, false);
   }
 }
 
@@ -143,14 +241,22 @@ for (const [k, g] of Object.entries(COMMON)) {
   // common words win for exact matches so "sein" reads as "his; also: to be"
   const l = fromGloss(k, g);
   if (k[0] === k[0].toUpperCase() && k[0] !== k[0].toLowerCase()) EXACT.set(k, l);
-  else LOWER.set(k, l);
+  else {
+    // Spanish: keep both meanings, e.g. como = "like, as" and "I eat"
+    const before = LOWER.get(lower(k));
+    const merge = IS_ES && before && before.base !== k && !l.meaning.includes(`(${before.base})`);
+    LOWER.set(k, merge ? { ...l, meaning: `${l.meaning}; also: ${before!.meaning}` } : l);
+  }
 }
 
-const ENDINGS = ["en", "em", "er", "es", "e", "n", "s"];
+/** [ending to remove, what to put back]: großes → groß, rojas → rojo */
+const ENDINGS: [string, string][] = IS_ES
+  ? [["as", "o"], ["os", "o"], ["a", "o"], ["es", ""], ["s", ""], ["ita", "a"], ["ito", "o"]]
+  : [["en", ""], ["em", ""], ["er", ""], ["es", ""], ["e", ""], ["n", ""], ["s", ""]];
 
 /** Look up a tapped word: story glossary first, then the course, then common endings. */
 export function lookupWord(token: string, story?: Story): Lookup | null {
-  const t = token.replace(/[„“"'’‚‘»«]/g, "");
+  const t = token.replace(/[„“"'’‚‘»«¿¡]/g, "");
   if (!t) return null;
   if (story) {
     const g = story.gloss[t] ?? story.gloss[lower(t)];
@@ -165,9 +271,9 @@ export function lookupWord(token: string, story?: Story): Lookup | null {
   const asNoun = EXACT.get(cap);
   if (asNoun) return { ...asNoun, word: t };
   // adjective and noun endings: großes → groß, Kindern → Kinder
-  for (const e of ENDINGS) {
+  for (const [e, back] of ENDINGS) {
     if (t.length > e.length + 2 && lower(t).endsWith(e)) {
-      const stem = t.slice(0, -e.length);
+      const stem = t.slice(0, -e.length) + back;
       const hit = LOWER.get(lower(stem)) ?? EXACT.get(stem) ?? EXACT.get(stem[0].toUpperCase() + stem.slice(1));
       if (hit) return { ...hit, word: t };
     }
@@ -178,7 +284,7 @@ export function lookupWord(token: string, story?: Story): Lookup | null {
 /** Split a sentence into words and the bits between them. */
 export function splitWords(sentence: string): { text: string; word: boolean }[] {
   const out: { text: string; word: boolean }[] = [];
-  const re = /[A-Za-zÄÖÜäöüßéÉ]+(?:-[A-Za-zÄÖÜäöüßéÉ]+)*/g;
+  const re = /[A-Za-zÄÖÜäöüßáéíóúñÁÉÍÓÚÑ]+(?:-[A-Za-zÄÖÜäöüßáéíóúñÁÉÍÓÚÑ]+)*/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(sentence))) {

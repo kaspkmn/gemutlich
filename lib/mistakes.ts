@@ -1,5 +1,7 @@
 import type { Exercise } from "./exercises";
 import { VERBS } from "@/content/verbs";
+import { getUnit } from "@/content/course";
+import { IS_ES, L } from "./lang";
 
 // ── skills ─────────────────────────────────────────────────────────────────
 
@@ -7,10 +9,16 @@ export type Skill = "vocab" | "spelling" | "gender" | "verbs" | "cases" | "wordo
 
 export const SKILLS: { id: Skill; label: string; blurb: string }[] = [
   { id: "vocab", label: "Word meanings", blurb: "Knowing what words mean, in both directions" },
-  { id: "spelling", label: "Writing words", blurb: "Typing German words from memory" },
-  { id: "gender", label: "der, die, das", blurb: "Knowing each noun's gender" },
-  { id: "verbs", label: "Verb forms", blurb: "Endings, past tense, separable verbs" },
-  { id: "cases", label: "Articles & cases", blurb: "den, dem, einen, mir, zum and friends" },
+  { id: "spelling", label: "Writing words", blurb: `Typing ${L.name} words from memory` },
+  { id: "gender", label: IS_ES ? "el or la" : "der, die, das", blurb: "Knowing each noun's gender" },
+  {
+    id: "verbs",
+    label: "Verb forms",
+    blurb: IS_ES ? "Endings, ser vs. estar, stem changes, the past tense" : "Endings, past tense, separable verbs",
+  },
+  IS_ES
+    ? { id: "cases", label: "Articles & agreement", blurb: "el/la, un/una, al/del, mi/mis, lo/la/le" }
+    : { id: "cases", label: "Articles & cases", blurb: "den, dem, einen, mir, zum and friends" },
   { id: "wordorder", label: "Sentence structure", blurb: "Putting words in the right order" },
   { id: "listening", label: "Listening", blurb: "Understanding and writing what you hear" },
   { id: "numbers", label: "Numbers & time", blurb: "Prices, clock times, ages, phone numbers" },
@@ -19,7 +27,9 @@ export const SKILLS: { id: Skill; label: string; blurb: string }[] = [
 
 export const skillLabel = (s: Skill) => SKILLS.find((x) => x.id === s)?.label ?? s;
 
-const CASE_WORD = /^(der|die|das|den|dem|des|ein|eine|einen|einem|einer|kein|keine|keinen|mein|meine|meinen|dein|deine|im|am|zum|zur|ins|ihn|ihm|mir|mich|dir|dich|uns|euch)$/i;
+const CASE_WORD = IS_ES
+  ? /^(el|la|los|las|un|una|unos|unas|al|del|mi|mis|tu|tus|su|sus|lo|le|les|me|te|nos|nuestro|nuestra|este|esta|estos|estas|ese|esa)$/i
+  : /^(der|die|das|den|dem|des|ein|eine|einen|einem|einer|kein|keine|keinen|mein|meine|meinen|dein|deine|im|am|zum|zur|ins|ihn|ihm|mir|mich|dir|dich|uns|euch)$/i;
 const VERB_FORMS = new Set(VERBS.flatMap((v) => [v.inf, ...v.forms]).map((f) => f.toLowerCase()));
 const UNIT_SKILL: Record<string, Skill> = {
   numbers: "numbers",
@@ -38,6 +48,11 @@ const UNIT_SKILL: Record<string, Skill> = {
   negation: "cases",
   because: "wordorder",
 };
+
+function unitSkill(unitId?: string): Skill | undefined {
+  if (!unitId) return undefined;
+  return getUnit(unitId)?.skill ?? UNIT_SKILL[unitId];
+}
 
 export function skillOf(ex: Exercise): Skill {
   switch (ex.kind) {
@@ -60,11 +75,11 @@ export function skillOf(ex: Exercise): Skill {
     case "fillType": {
       const a = ex.answer.trim();
       if (CASE_WORD.test(a)) return "cases";
-      if (VERB_FORMS.has(a.toLowerCase()) || /^ge\w+(t|en)$/.test(a)) return "verbs";
-      return (ex.unitId && UNIT_SKILL[ex.unitId]) || "vocab";
+      if (VERB_FORMS.has(a.toLowerCase()) || (!IS_ES && /^ge\w+(t|en)$/.test(a))) return "verbs";
+      return unitSkill(ex.unitId) ?? "vocab";
     }
     case "choice":
-      return (ex.unitId && UNIT_SKILL[ex.unitId]) || "vocab";
+      return unitSkill(ex.unitId) ?? "vocab";
   }
 }
 

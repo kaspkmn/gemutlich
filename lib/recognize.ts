@@ -1,7 +1,8 @@
 "use client";
 
-import { lev, norm } from "./answers";
+import { lev, fold as norm } from "./answers";
 import { digitsToWords } from "./numbers";
+import { L } from "./lang";
 
 /* Speech recognition built into Chrome, Edge and Safari. Free, no key needed. */
 
@@ -44,7 +45,7 @@ export const RECOGNITION_MESSAGES: Record<string, string> = {
 };
 
 /** Listen once. Resolves with what was heard (several guesses, best first). */
-export function listenOnce(lang = "de-DE"): { result: Promise<string[]>; stop: () => void } {
+export function listenOnce(lang = L.bcp): { result: Promise<string[]>; stop: () => void } {
   const C = ctor();
   if (!C) return { result: Promise.reject(new RecognitionError("unsupported")), stop: () => {} };
   const rec = new C();

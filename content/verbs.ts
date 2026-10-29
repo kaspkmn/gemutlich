@@ -1,18 +1,12 @@
 /** Present-tense conjugations for the verbs taught in the course. */
 
-export const PERSONS = ["ich", "du", "er / sie / es", "wir", "ihr", "sie / Sie"] as const;
+import type { Verb } from "./types";
+import { IS_ES } from "@/lib/lang";
+import { ES_PERSONS, ES_VERBS, esRegularForms } from "./es/verbs";
 
-export interface Verb {
-  inf: string;
-  en: string;
-  unitId: string;
-  forms: [string, string, string, string, string, string];
-}
+export type { Verb } from "./types";
 
-/** Regular verb: stem + endings, with the usual spelling tweaks. */
-export function regularForms(inf: string): Verb["forms"] {
-  return reg(inf);
-}
+const DE_PERSONS: readonly string[] = ["ich", "du", "er / sie / es", "wir", "ihr", "sie / Sie"];
 
 function reg(inf: string): Verb["forms"] {
   const stem = inf.replace(/e?n$/, "");
@@ -36,7 +30,7 @@ const v = (inf: string, en: string, unitId: string, forms?: Verb["forms"]): Verb
   forms: forms ?? reg(inf),
 });
 
-export const VERBS: Verb[] = [
+const DE_VERBS: Verb[] = [
   v("heißen", "to be called", "intro", ["heiße", "heißt", "heißt", "heißen", "heißt", "heißen"]),
   v("kommen", "to come", "intro"),
   v("wohnen", "to live", "intro"),
@@ -95,3 +89,12 @@ export const VERBS: Verb[] = [
   v("hoffen", "to hope", "because"),
   v("wissen", "to know", "because", ["weiß", "weißt", "weiß", "wissen", "wisst", "wissen"]),
 ];
+
+/** The six persons, in table order. */
+export const PERSONS: readonly string[] = IS_ES ? ES_PERSONS : DE_PERSONS;
+/** Verbs for the language being studied. */
+export const VERBS: Verb[] = IS_ES ? ES_VERBS : DE_VERBS;
+/** What a verb's forms would be if it were completely regular. */
+export function regularForms(inf: string): Verb["forms"] {
+  return IS_ES ? esRegularForms(inf) : reg(inf);
+}

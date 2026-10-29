@@ -2,6 +2,7 @@ import type { CardState } from "./srs";
 import type { MistakeEntry, SkillStat } from "./mistakes";
 import type { CourseWord, Gender, WordType } from "@/content/types";
 import { getCourseWord } from "@/content/course";
+import type { Lang } from "./lang";
 
 export interface UnitProgress {
   completed: boolean;
@@ -50,8 +51,16 @@ export interface Settings {
   name: string;
 }
 
+/** Everything that belongs to one language. The language not being studied waits in `shelf`. */
+export const LANG_FIELDS = ["units", "cards", "custom", "writing", "tests", "mistakes", "skills", "read", "stats"] as const;
+export type LangData = Pick<AppState, (typeof LANG_FIELDS)[number]> & { voiceURI: string };
+
 export interface AppState {
   version: 1;
+  /** the language being studied */
+  lang: Lang;
+  /** progress for the other language(s), swapped in when switching */
+  shelf: Partial<Record<Lang, LangData>>;
   updatedAt: number;
   xp: number;
   days: Record<string, number>;
@@ -82,6 +91,8 @@ export const DEFAULT_SETTINGS: Settings = {
 export function emptyState(): AppState {
   return {
     version: 1,
+    lang: "de",
+    shelf: {},
     updatedAt: 0,
     xp: 0,
     days: {},
@@ -107,6 +118,8 @@ export function hydrate(raw: unknown): AppState {
     ...base,
     ...r,
     version: 1,
+    lang: r.lang === "es" ? "es" : "de",
+    shelf: r.shelf && typeof r.shelf === "object" ? r.shelf : {},
     days: r.days ?? {},
     units: r.units ?? {},
     cards: r.cards ?? {},
@@ -139,4 +152,38 @@ export function bestTest(state: AppState, id: string): number | undefined {
     if (best === undefined || s > best) best = s;
   }
   return best;
+}
+
+function emptyLangData(): LangData {
+  const e = emptyState();
+  return { units: e.units, cards: e.cards, custom: e.custom, writing: e.writing, tests: e.tests, mistakes: e.mistakes, skills: e.skills, read: e.read, stats: e.stats, voiceURI: "" };
+}
+
+/** Put the current language's progress on the shelf and take out another's. XP, streak and settings stay shared. */
+export function swapLanguage(s: AppState, to: Lang): AppState {
+  if (s.lang === to) return s;
+  const current: LangData = {
+    units: s.units,
+    cards: s.cards,
+    custom: s.custom,
+    writing: s.writing,
+    tests: s.tests,
+    mistakes: s.mistakes,
+    skills: s.skills,
+    read: s.read,
+    stats: s.stats,
+    voiceURI: s.settings.voiceURI,
+  };
+  const next = { ...emptyLangData(), ...(s.shelf[to] ?? {}) };
+  const shelf = { ...s.shelf, [s.lang]: current };
+  delete shelf[to];
+  const { voiceURI, ...data } = next;
+  return {
+    ...s,
+    ...data,
+    stats: { ...emptyState().stats, ...data.stats },
+    lang: to,
+    shelf,
+    settings: { ...s.settings, voiceURI },
+  };
 }

@@ -1,26 +1,14 @@
 /** Short listening conversations between two speakers, each with comprehension questions. */
 
-export interface DialogueLine {
-  /** 0 = first speaker, 1 = second speaker */
-  who: 0 | 1;
-  de: string;
-  en: string;
-}
+import type { Dialogue, DialogueLine } from "./types";
+import { IS_ES } from "@/lib/lang";
+import { ES_DIALOGUES } from "./es/dialogues";
 
-export interface Dialogue {
-  id: string;
-  title: string;
-  /** unlocks after this lesson */
-  after: string;
-  setting: string;
-  speakers: [string, string];
-  lines: DialogueLine[];
-  questions: { q: string; options: string[]; answer: string }[];
-}
+export type { Dialogue, DialogueLine } from "./types";
 
 const L = (who: 0 | 1, de: string, en: string): DialogueLine => ({ who, de, en });
 
-export const DIALOGUES: Dialogue[] = [
+const DE_DIALOGUES: Dialogue[] = [
   {
     id: "neighbors",
     title: "Good morning",
@@ -198,3 +186,6 @@ export const DIALOGUES: Dialogue[] = [
     ],
   },
 ];
+
+/** Conversations for the language being studied. */
+export const DIALOGUES: Dialogue[] = IS_ES ? ES_DIALOGUES : DE_DIALOGUES;

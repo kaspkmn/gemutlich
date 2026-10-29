@@ -1,17 +1,23 @@
 "use client";
 
+import { L } from "./lang";
+
 let cachedVoices: SpeechSynthesisVoice[] = [];
 
 export function speechSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
-export function germanVoices(): SpeechSynthesisVoice[] {
+/** Voices for the language being studied. */
+export function langVoices(): SpeechSynthesisVoice[] {
   if (!speechSupported()) return [];
   const all = window.speechSynthesis.getVoices();
   if (all.length) cachedVoices = all;
-  return cachedVoices.filter((v) => v.lang.toLowerCase().startsWith("de"));
+  return cachedVoices.filter((v) => v.lang.toLowerCase().replace("_", "-").startsWith(L.code));
 }
+
+/** Old name, kept for files that still use it. */
+export const germanVoices = langVoices;
 
 /** Call fn when the browser finishes loading its voice list. */
 export function onVoicesReady(fn: () => void): () => void {
@@ -22,14 +28,24 @@ export function onVoicesReady(fn: () => void): () => void {
   return () => window.speechSynthesis.removeEventListener("voiceschanged", handler);
 }
 
-const QUALITY_HINTS = ["premium", "enhanced", "natural", "neural", "google", "anna", "petra", "helena", "katja", "markus", "yannick"];
+const QUALITY_HINTS = [
+  "premium", "enhanced", "natural", "neural", "google",
+  "anna", "petra", "helena", "katja", "markus", "yannick",
+  "paulina", "juan", "sabina", "dalia", "jorge", "francisca", "monica", "mónica",
+];
 
 function rankedVoices(): SpeechSynthesisVoice[] {
-  return germanVoices()
+  return langVoices()
     .map((v) => {
       const name = v.name.toLowerCase();
+      const lang = v.lang.replace("_", "-");
       let s = QUALITY_HINTS.reduce((acc, h) => (name.includes(h) ? acc + 1 : acc), 0);
-      if (v.lang === "de-DE") s += 1;
+      // the main accent first (Mexican Spanish, Germany German), then the others in order
+      if (lang === L.bcp) s += 4;
+      else {
+        const alt = L.bcpAlt.indexOf(lang);
+        if (alt >= 0) s += 3 - alt * 0.5;
+      }
       return { v, s };
     })
     .sort((a, b) => b.s - a.s)
@@ -49,7 +65,7 @@ const clean = (text: string) => text.replace(/\.\.\.|…|___/g, " ").replace(/[�
 
 function utter(text: string, opts: { rate?: number; voice?: SpeechSynthesisVoice; pitch?: number }) {
   const u = new SpeechSynthesisUtterance(clean(text));
-  u.lang = "de-DE";
+  u.lang = L.bcp;
   if (opts.voice) u.voice = opts.voice;
   u.rate = opts.rate ?? 0.9;
   u.pitch = opts.pitch ?? 1;
@@ -74,7 +90,7 @@ export function stopSpeaking() {
 
 /**
  * Read a conversation aloud, one line after another. Two speakers get two
- * different German voices when the device has them, otherwise two pitches.
+ * different voices when the device has them, otherwise two pitches.
  * Returns a function that stops playback.
  */
 export function speakLines(

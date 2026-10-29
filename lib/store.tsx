@@ -2,7 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AppState, CustomWord, Settings, TestRecord, WritingEntry, emptyState, hydrate } from "./state";
+import { AppState, CustomWord, Settings, TestRecord, WritingEntry, emptyState, hydrate, swapLanguage } from "./state";
+import { LANG, rememberLang, type Lang } from "./lang";
 import { Grade, newCard, review } from "./srs";
 import { dayKey } from "./dates";
 import { getUnit } from "@/content/course";
@@ -39,6 +40,8 @@ interface Store {
   resetAll: () => void;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
+  /** switch to studying another language (saves, then reloads the page) */
+  switchLang: (to: Lang) => Promise<void>;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -137,6 +140,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setReady(true);
     pull();
   }, [pull]);
+
+  // Progress says another language (switched on another device): reload in that language.
+  useEffect(() => {
+    if (!ready || state.updatedAt === 0 || pathname === "/login") return;
+    if (state.lang === LANG) {
+      try {
+        sessionStorage.removeItem("lang-reload");
+      } catch {}
+      return;
+    }
+    try {
+      if (sessionStorage.getItem("lang-reload") === state.lang) return;
+      sessionStorage.setItem("lang-reload", state.lang);
+    } catch {
+      return;
+    }
+    rememberLang(state.lang);
+    window.location.reload();
+  }, [ready, state.lang, state.updatedAt, pathname]);
 
   // Send anyone who isn't signed in to the PIN screen.
   useEffect(() => {
@@ -285,7 +307,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         update((s) => withXp({ ...s, tests: [{ ...rec, at: Date.now() }, ...s.tests].slice(0, 300) }, xp)),
       updateSettings: (patch) => update((s) => ({ ...s, settings: { ...s.settings, ...patch } })),
       replaceState: (s) => update(() => hydrate(s)),
-      resetAll: () => update(() => ({ ...emptyState(), settings: latest.current.settings })),
+      resetAll: () => update(() => ({ ...emptyState(), lang: latest.current.lang, settings: latest.current.settings })),
       signOut: async () => {
         if (isDirty()) await push(latest.current);
         await fetch("/api/logout", { method: "POST" });
@@ -297,6 +319,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setSync("signed-out");
       },
       refresh: pull,
+      switchLang: async (to) => {
+        if (to === latest.current.lang && to === LANG) return;
+        const next = { ...swapLanguage(latest.current, to), updatedAt: Date.now() };
+        if (pushTimer.current) clearTimeout(pushTimer.current);
+        setState(next);
+        saveLocal(next, true);
+        rememberLang(to);
+        await push(next);
+        window.location.assign("/");
+      },
     };
   }, [state, ready, sync, update, push, pull]);
 

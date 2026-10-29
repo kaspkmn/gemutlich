@@ -4,22 +4,13 @@
  * A gloss is either "meaning" or ["meaning", "dictionary form"].
  */
 
-export type Gloss = string | [string, string];
+import type { Story } from "./types";
+import { IS_ES } from "@/lib/lang";
+import { ES_STORIES } from "./es/stories";
 
-export interface Story {
-  id: string;
-  title: string;
-  titleEn: string;
-  /** unlocks after this lesson */
-  after: string;
-  blurb: string;
-  /** [German, English] sentences; null starts a new paragraph */
-  lines: ([string, string] | null)[];
-  gloss: Record<string, Gloss>;
-  questions: { q: string; options: string[]; answer: string }[];
-}
+export type { Gloss, Story } from "./types";
 
-export const STORIES: Story[] = [
+const DE_STORIES: Story[] = [
   {
     id: "mia",
     title: "Hallo, ich bin Mia",
@@ -496,3 +487,6 @@ export const STORIES: Story[] = [
     ],
   },
 ];
+
+/** Stories for the language being studied. */
+export const STORIES: Story[] = IS_ES ? ES_STORIES : DE_STORIES;

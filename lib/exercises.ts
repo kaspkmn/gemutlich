@@ -2,6 +2,7 @@ import { ALL_WORDS, ALL_SENTENCES, UNITS } from "@/content/course";
 import type { CourseWord, Unit } from "@/content/types";
 import { VERBS, type Verb } from "@/content/verbs";
 import { tokens } from "./answers";
+import { IS_ES, L } from "./lang";
 
 export type Exercise =
   | { kind: "mc"; id: string; dir: "de-en" | "en-de"; word: CourseWord; options: string[]; answer: string }
@@ -10,9 +11,9 @@ export type Exercise =
   | { kind: "typeEn"; id: string; word: CourseWord }
   | { kind: "gender"; id: string; word: CourseWord }
   | { kind: "match"; id: string; words: CourseWord[] }
-  | { kind: "fill"; id: string; de: string; en: string; answer: string; options: string[]; unitId?: string }
-  | { kind: "fillType"; id: string; de: string; en: string; answer: string; unitId?: string }
-  | { kind: "build"; id: string; de: string; en: string; tiles: string[]; unitId?: string }
+  | { kind: "fill"; id: string; de: string; en: string; answer: string; options: string[]; unitId?: string; why?: string }
+  | { kind: "fillType"; id: string; de: string; en: string; answer: string; unitId?: string; why?: string }
+  | { kind: "build"; id: string; de: string; en: string; tiles: string[]; unitId?: string; why?: string }
   | { kind: "choice"; id: string; q: string; answer: string; options: string[]; explain?: string; unitId?: string }
   | { kind: "dictation"; id: string; de: string; en: string }
   | { kind: "conj"; id: string; verb: Verb; person: number; pronoun: string };
@@ -69,7 +70,13 @@ export const dictationExercise = (de: string, en: string): Exercise => ({ kind: 
 
 export const typeable = (w: CourseWord) => !w.noType && w.de.length <= 40;
 export const typeableEn = (w: CourseWord) => w.en.length <= 40;
-export const genderable = (w: CourseWord) => w.type === "noun" && w.gender !== "pl" && /^(der|die|das) /.test(w.de);
+export const genderable = (w: CourseWord) => {
+  if (w.type !== "noun" || !w.gender || w.gender === "pl") return false;
+  const m = L.articleRe.exec(w.de);
+  if (!m || !L.genderOptions.includes(m[1])) return false;
+  // Spanish: leave out feminine words that take el (el agua), since the article doesn't show the gender
+  return !IS_ES || (m[1] === "la") === (w.gender === "f");
+};
 
 export function buildExercise(de: string, en: string, others: string[]): Exercise {
   const toks = tokens(de);
@@ -80,10 +87,14 @@ export function buildExercise(de: string, en: string, others: string[]): Exercis
   return { kind: "build", id: uid("bd"), de, en, tiles: shuffle([...toks, ...distract]) };
 }
 
-const PRONOUNS: string[][] = [["ich"], ["du"], ["er", "sie", "es"], ["wir"], ["ihr"], ["sie (they)", "Sie"]];
+const PRONOUNS: string[][] = IS_ES
+  ? [["yo"], ["tú"], ["él", "ella", "usted"], ["nosotros"], ["vosotros"], ["ellos", "ellas", "ustedes"]]
+  : [["ich"], ["du"], ["er", "sie", "es"], ["wir"], ["ihr"], ["sie (they)", "Sie"]];
+/** vosotros (Spain only) is never quizzed */
+const QUIZ_PERSONS = IS_ES ? [0, 1, 2, 3, 5] : [0, 1, 2, 3, 4, 5];
 
 export function conjExercise(verb: Verb): Exercise {
-  const person = Math.floor(Math.random() * 6);
+  const person = pick(QUIZ_PERSONS);
   return { kind: "conj", id: uid("cj"), verb, person, pronoun: pick(PRONOUNS[person]) };
 }
 
@@ -93,10 +104,10 @@ export function drillExercises(unit: Unit, typedFill = false): Exercise[] {
   return unit.drills.map((d) => {
     if (d.t === "fill") {
       return typedFill
-        ? { kind: "fillType", id: uid("ft"), de: d.de, en: d.en, answer: d.answer, unitId: unit.id }
-        : { kind: "fill", id: uid("fl"), de: d.de, en: d.en, answer: d.answer, options: shuffle(d.options), unitId: unit.id };
+        ? { kind: "fillType", id: uid("ft"), de: d.de, en: d.en, answer: d.answer, unitId: unit.id, why: d.why }
+        : { kind: "fill", id: uid("fl"), de: d.de, en: d.en, answer: d.answer, options: shuffle(d.options), unitId: unit.id, why: d.why };
     }
-    if (d.t === "build") return { ...buildExercise(d.de, d.en, sentences.filter((s) => s !== d.de)), unitId: unit.id } as Exercise;
+    if (d.t === "build") return { ...buildExercise(d.de, d.en, sentences.filter((s) => s !== d.de)), unitId: unit.id, why: d.why } as Exercise;
     return { kind: "choice", id: uid("ch"), q: d.q, answer: d.answer, options: shuffle(d.options), explain: d.explain, unitId: unit.id };
   });
 }
@@ -151,7 +162,7 @@ export function practiceExercises(mode: PracticeMode, words: CourseWord[], doneU
     }
     case "conj": {
       const verbs = VERBS.filter((v) => doneUnits.includes(v.unitId));
-      const list = verbs.length ? verbs : VERBS.filter((v) => ["intro", "sein"].includes(v.unitId));
+      const list = verbs.length ? verbs : VERBS.filter((v) => [...L.starterUnits, "sein", "es-ser"].includes(v.unitId));
       return Array.from({ length: size }, () => conjExercise(pick(list)));
     }
     case "sentences": {
